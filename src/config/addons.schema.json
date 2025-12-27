@@ -9,7 +9,7 @@
       "type": "object",
       "description": "Collection of addon groups, each defining dashboard cards and navigation",
       "patternProperties": {
-        "^[a-z_]+$": {
+        "^[a-z0-9_-]+$": {
           "$ref": "#/definitions/AddonGroup"
         }
       }
@@ -52,7 +52,7 @@
     },
     "MetricGridCard": {
       "type": "object",
-      "required": ["id", "type", "title", "metrics"],
+      "required": ["id", "type", "title", "metrics", "time_range_default"],
       "properties": {
         "id": { "type": "string" },
         "type": { "const": "metric_grid" },
