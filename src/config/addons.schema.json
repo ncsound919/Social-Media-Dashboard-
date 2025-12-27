@@ -1,0 +1,240 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Addon Configuration Schema",
+  "description": "Schema for validating addon dashboard configuration including widgets, automation rules, and metadata",
+  "type": "object",
+  "required": ["addons"],
+  "properties": {
+    "addons": {
+      "type": "object",
+      "description": "Collection of addon groups, each defining dashboard cards and navigation",
+      "patternProperties": {
+        "^[a-z_]+$": {
+          "$ref": "#/definitions/AddonGroup"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "AddonGroup": {
+      "type": "object",
+      "required": ["id", "label", "navigation_group", "dashboard_cards"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the addon group"
+        },
+        "label": {
+          "type": "string",
+          "description": "Display name for the addon group"
+        },
+        "navigation_group": {
+          "type": "string",
+          "description": "Navigation category for grouping in UI"
+        },
+        "dashboard_cards": {
+          "type": "array",
+          "description": "Array of dashboard widget configurations",
+          "items": {
+            "oneOf": [
+              { "$ref": "#/definitions/MetricGridCard" },
+              { "$ref": "#/definitions/RecurringSlotListCard" },
+              { "$ref": "#/definitions/LibraryCard" },
+              { "$ref": "#/definitions/KanbanBoardCard" },
+              { "$ref": "#/definitions/AutomationPanelCard" },
+              { "$ref": "#/definitions/BriefGeneratorCard" },
+              { "$ref": "#/definitions/TimelineBoardCard" },
+              { "$ref": "#/definitions/ExperimentMatrixCard" }
+            ]
+          }
+        }
+      }
+    },
+    "MetricGridCard": {
+      "type": "object",
+      "required": ["id", "type", "title", "metrics"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "metric_grid" },
+        "title": { "type": "string" },
+        "metrics": {
+          "type": "array",
+          "description": "Array of metric identifiers to display",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "time_range_default": {
+          "type": "string",
+          "description": "Default time range for metrics",
+          "enum": ["last_7_days", "last_30_days", "last_90_days", "custom"]
+        }
+      }
+    },
+    "RecurringSlotListCard": {
+      "type": "object",
+      "required": ["id", "type", "title", "fields"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "recurring_slot_list" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "fields": {
+          "type": "array",
+          "description": "Fields to display for each recurring slot",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "LibraryCard": {
+      "type": "object",
+      "required": ["id", "type", "title"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "library" },
+        "title": { "type": "string" },
+        "item_types": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "tags_enabled": { "type": "boolean" },
+        "actions": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "KanbanBoardCard": {
+      "type": "object",
+      "required": ["id", "type", "title", "columns"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "kanban_board" },
+        "title": { "type": "string" },
+        "columns": {
+          "type": "array",
+          "description": "Column identifiers for the kanban board",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "swimlanes": {
+          "type": "array",
+          "description": "Optional swimlane grouping dimensions",
+          "items": {
+            "type": "string",
+            "enum": ["platform", "campaign", "user", "priority"]
+          }
+        }
+      }
+    },
+    "AutomationPanelCard": {
+      "type": "object",
+      "required": ["id", "type", "title"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "automation_panel" },
+        "title": { "type": "string" },
+        "rules": {
+          "type": "array",
+          "description": "Automation rules with triggers, conditions, and actions",
+          "items": {
+            "$ref": "#/definitions/AutomationRule"
+          }
+        }
+      }
+    },
+    "AutomationRule": {
+      "type": "object",
+      "required": ["id", "trigger", "conditions", "actions"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique rule identifier"
+        },
+        "trigger": {
+          "type": "string",
+          "description": "Event that activates the rule",
+          "enum": [
+            "post_published",
+            "before_schedule",
+            "metric_threshold_reached",
+            "time_based",
+            "manual_trigger"
+          ]
+        },
+        "conditions": {
+          "type": "array",
+          "description": "Conditions evaluated as expressions (e.g., 'engagement_rate > threshold')",
+          "items": { "type": "string" }
+        },
+        "actions": {
+          "type": "array",
+          "description": "Actions to execute when conditions are met",
+          "items": {
+            "type": "string",
+            "enum": [
+              "mark_evergreen",
+              "add_to_recycle_queue",
+              "warn_user",
+              "suggest_alternative_slot",
+              "send_notification",
+              "update_status"
+            ]
+          }
+        }
+      }
+    },
+    "BriefGeneratorCard": {
+      "type": "object",
+      "required": ["id", "type", "title", "brief_templates", "fields"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "brief_generator" },
+        "title": { "type": "string" },
+        "brief_templates": {
+          "type": "array",
+          "description": "Available brief template types",
+          "items": { "type": "string" }
+        },
+        "fields": {
+          "type": "array",
+          "description": "Fields required for brief generation",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "TimelineBoardCard": {
+      "type": "object",
+      "required": ["id", "type", "title", "fields"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "timeline_board" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "fields": {
+          "type": "array",
+          "description": "Fields for timeline arc entries",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "ExperimentMatrixCard": {
+      "type": "object",
+      "required": ["id", "type", "title", "dimensions", "metrics"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "experiment_matrix" },
+        "title": { "type": "string" },
+        "dimensions": {
+          "type": "array",
+          "description": "Experiment variables to test",
+          "items": { "type": "string" }
+        },
+        "metrics": {
+          "type": "array",
+          "description": "Metrics to track for experiments",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}
