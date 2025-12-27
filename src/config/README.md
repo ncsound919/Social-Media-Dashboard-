@@ -157,7 +157,10 @@ Supported action types (validated against registry):
 ## Adding a New Addon
 
 1. Add a new key under `addons` in `addons.json`
-2. Define required properties:
+2. Use a consistent naming convention:
+   - **Recommended**: `snake_case` for addon IDs (e.g., `culture_community`, `creator_ops`)
+   - Also supported: `kebab-case` (e.g., `my-addon`) or alphanumeric with underscores/hyphens
+3. Define required properties:
    ```json
    {
      "id": "my_addon",
@@ -166,8 +169,8 @@ Supported action types (validated against registry):
      "dashboard_cards": []
    }
    ```
-3. Add dashboard cards with appropriate widget types
-4. Validate against schema using a JSON Schema validator (e.g., AJV, Zod)
+4. Add dashboard cards with appropriate widget types
+5. Validate against schema using a JSON Schema validator (e.g., AJV, Zod)
 
 ## Validation
 
