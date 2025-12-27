@@ -1,0 +1,136 @@
+{
+  "addons": {
+    "culture_community": {
+      "id": "culture_community",
+      "label": "Culture & Community",
+      "navigation_group": "Community",
+      "dashboard_cards": [
+        {
+          "id": "community_impact_metrics",
+          "type": "metric_grid",
+          "title": "Community Impact",
+          "metrics": [
+            "educational_posts_published",
+            "black_owned_spotlights",
+            "collaborations_count",
+            "community_events_promoted"
+          ],
+          "time_range_default": "last_30_days"
+        },
+        {
+          "id": "spotlight_scheduler",
+          "type": "recurring_slot_list",
+          "title": "Spotlight Queue",
+          "description": "Scheduled highlights for Black creators, local businesses, and community stories.",
+          "fields": [
+            "name",
+            "category",
+            "platforms",
+            "frequency",
+            "next_run_at",
+            "last_published_at"
+          ]
+        },
+        {
+          "id": "resource_drop_vault",
+          "type": "library",
+          "title": "Knowledge & Resource Vault",
+          "item_types": ["thread", "carousel", "longform", "video"],
+          "tags_enabled": true,
+          "actions": ["open", "clone_to_draft", "add_to_story_arc"]
+        }
+      ]
+    },
+
+    "creator_ops": {
+      "id": "creator_ops",
+      "label": "Creator Ops",
+      "navigation_group": "Ops",
+      "dashboard_cards": [
+        {
+          "id": "content_pipeline",
+          "type": "kanban_board",
+          "title": "Content Pipeline",
+          "columns": [
+            "ideas",
+            "drafting",
+            "ready",
+            "scheduled",
+            "published",
+            "evergreen"
+          ],
+          "swimlanes": ["platform", "campaign"]
+        },
+        {
+          "id": "evergreen_rotation",
+          "type": "automation_panel",
+          "title": "Evergreen Engine",
+          "rules": [
+            {
+              "id": "auto_flag_high_performers",
+              "trigger": "post_published",
+              "conditions": ["engagement_rate > threshold"],
+              "actions": ["mark_evergreen", "add_to_recycle_queue"]
+            },
+            {
+              "id": "avoid_overposting",
+              "trigger": "before_schedule",
+              "conditions": ["same_content_recently_published"],
+              "actions": ["warn_user", "suggest_alternative_slot"]
+            }
+          ]
+        },
+        {
+          "id": "micro_briefs",
+          "type": "brief_generator",
+          "title": "Micro Briefs",
+          "brief_templates": [
+            "social_post",
+            "short_video",
+            "email_blurb",
+            "flyer_graphic",
+            "landing_section"
+          ],
+          "fields": [
+            "campaign_id",
+            "goal",
+            "target_audience",
+            "key_message",
+            "tone",
+            "deliverable_type"
+          ]
+        }
+      ]
+    },
+
+    "culture_creator_bridge": {
+      "id": "culture_creator_bridge",
+      "label": "Arcs & Experiments",
+      "navigation_group": "Strategy",
+      "dashboard_cards": [
+        {
+          "id": "narrative_arcs",
+          "type": "timeline_board",
+          "title": "Narrative Arcs",
+          "description": "Multi‑week storylines that tie campaigns and culture together.",
+          "arc_fields": [
+            "name",
+            "theme",
+            "start_date",
+            "end_date",
+            "primary_platforms",
+            "linked_campaigns",
+            "impact_tags"
+          ]
+        },
+        {
+          "id": "ops_experiments",
+          "type": "experiment_matrix",
+          "title": "Ops Experiments",
+          "dimensions": ["hook", "visual_style", "posting_time", "call_to_action"],
+          "metrics": ["ctr", "save_rate", "share_rate", "comment_depth"]
+        }
+      ]
+    }
+  }
+}
