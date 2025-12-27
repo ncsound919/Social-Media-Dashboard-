@@ -113,7 +113,7 @@
           "id": "narrative_arcs",
           "type": "timeline_board",
           "title": "Narrative Arcs",
-          "description": "Multi‑week storylines that tie campaigns and culture together.",
+          "description": "Multi-week storylines that tie campaigns and culture together.",
           "fields": [
             "name",
             "theme",

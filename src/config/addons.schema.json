@@ -57,6 +57,7 @@
         "id": { "type": "string" },
         "type": { "const": "metric_grid" },
         "title": { "type": "string" },
+        "description": { "type": "string" },
         "metrics": {
           "type": "array",
           "description": "Array of metric identifiers to display",
@@ -92,6 +93,7 @@
         "id": { "type": "string" },
         "type": { "const": "library" },
         "title": { "type": "string" },
+        "description": { "type": "string" },
         "item_types": {
           "type": "array",
           "items": { "type": "string" }
@@ -110,6 +112,7 @@
         "id": { "type": "string" },
         "type": { "const": "kanban_board" },
         "title": { "type": "string" },
+        "description": { "type": "string" },
         "columns": {
           "type": "array",
           "description": "Column identifiers for the kanban board",
@@ -133,6 +136,7 @@
         "id": { "type": "string" },
         "type": { "const": "automation_panel" },
         "title": { "type": "string" },
+        "description": { "type": "string" },
         "rules": {
           "type": "array",
           "description": "Automation rules with triggers, conditions, and actions",
@@ -190,6 +194,7 @@
         "id": { "type": "string" },
         "type": { "const": "brief_generator" },
         "title": { "type": "string" },
+        "description": { "type": "string" },
         "brief_templates": {
           "type": "array",
           "description": "Available brief template types",
@@ -224,6 +229,7 @@
         "id": { "type": "string" },
         "type": { "const": "experiment_matrix" },
         "title": { "type": "string" },
+        "description": { "type": "string" },
         "dimensions": {
           "type": "array",
           "description": "Experiment variables to test",

@@ -107,7 +107,7 @@ Automation rules enable event-driven workflows. Each rule consists of:
 
 ### Triggers
 
-Supported trigger types (validated at config load time):
+Supported trigger types (validated at configuration load time against enum):
 - `post_published`: Fires when a post is published
 - `before_schedule`: Fires before scheduled post time
 - `metric_threshold_reached`: Fires when a metric crosses a threshold
@@ -116,15 +116,15 @@ Supported trigger types (validated at config load time):
 
 ### Conditions
 
-Conditions are string expressions evaluated at runtime. The system supports:
+Conditions are string expressions evaluated at runtime. In the JSON Schema, they are represented as plain strings and their expression syntax is not validated at configuration load time. The system supports:
 - **Comparison operators**: `>`, `<`, `>=`, `<=`, `==`, `!=`
 - **Variable references**: Metric names, post properties, user context
 - **Example**: `"engagement_rate > threshold"` where `engagement_rate` is a metric and `threshold` is a rule parameter
 
-**Validation**: 
-- Conditions are validated for syntax at rule registration
-- Unknown variables trigger clear error messages
-- Runtime evaluation failures are logged and optionally retried per rule configuration
+**Validation (runtime, not by JSON Schema)**: 
+- At rule registration, each condition string is parsed and validated for expression syntax
+- Unknown variables trigger clear error messages during rule registration
+- Runtime evaluation failures (during trigger execution) are logged and optionally retried per rule configuration
 
 ### Actions
 
