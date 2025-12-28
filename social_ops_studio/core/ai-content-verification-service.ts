@@ -3,7 +3,6 @@
  * Ethical AI Integration: Track and verify AI-generated content sources
  */
 
-import { v4 as uuidv4 } from 'uuid';
 import { AIContentSource, FactCheck, GeneratedSection } from '../data/models';
 
 export interface VerificationConfig {
@@ -139,6 +138,7 @@ export class AIContentVerificationService {
 
   /**
    * Extract potential facts/claims from text for verification
+   * Requires multiple indicators or high-confidence patterns
    */
   extractClaimsForVerification(text: string): string[] {
     const claims: string[] = [];
@@ -151,10 +151,6 @@ export class AIContentVerificationService {
       'according to',
       'research shows',
       'studies indicate',
-      'percent',
-      '%',
-      'increase',
-      'decrease',
       'found that',
       'reported',
       'statistics',
@@ -172,11 +168,12 @@ export class AIContentVerificationService {
         }
       });
       
-      // Require at least 2 indicators or specific high-confidence patterns
+      // High-confidence patterns that independently qualify
       const hasPercentage = /\d+\s*%/.test(sentence);
-      const hasStatistic = /\d+/.test(sentence) && (lower.includes('research') || lower.includes('study'));
+      const hasStatistic = /\d+/.test(sentence) && (lower.includes('research') || lower.includes('study') || lower.includes('statistic'));
       
-      if (matchCount >= 2 || hasPercentage || hasStatistic) {
+      // Extract if: 2+ indicators, OR percentage with any indicator, OR statistic with research/study reference
+      if (matchCount >= 2 || (hasPercentage && matchCount >= 1) || hasStatistic) {
         claims.push(sentence.trim());
       }
     });

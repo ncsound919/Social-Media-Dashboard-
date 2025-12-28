@@ -3,8 +3,7 @@
  * Smart Automation: Tag and recycle timeless content
  */
 
-import { v4 as uuidv4 } from 'uuid';
-import { EvergreenContent, PostDraft, ScheduledPost } from '../data/models';
+import { EvergreenContent, ScheduledPost } from '../data/models';
 
 export interface RecycleConfig {
   minEngagementRate: number; // Minimum engagement rate to qualify as evergreen
@@ -129,10 +128,14 @@ export class EvergreenContentService {
 
   /**
    * Suggest optimal time slots for recycled content
+   * Considers both gap size and optimal posting times
    */
   suggestRecycleSlot(existingSchedule: ScheduledPost[]): Date | null {
     const minGapHours = 2; // Minimum 2 hours between posts
     const minGapMs = minGapHours * 60 * 60 * 1000;
+    
+    // Optimal posting times (hours in 24-hour format)
+    const optimalHours = [9, 12, 17, 20]; // 9 AM, noon, 5 PM, 8 PM
     
     // Find gaps in the schedule
     const now = new Date();
@@ -144,11 +147,11 @@ export class EvergreenContentService {
       .filter(d => d >= now && d <= futureDate)
       .sort((a, b) => a.getTime() - b.getTime());
 
-    // If no scheduled posts, suggest tomorrow at 9 AM
+    // If no scheduled posts, suggest tomorrow at optimal time
     if (scheduledTimes.length === 0) {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(9, 0, 0, 0);
+      tomorrow.setHours(optimalHours[0], 0, 0, 0);
       return tomorrow;
     }
 
@@ -160,9 +163,27 @@ export class EvergreenContentService {
       const gap = scheduledTimes[i + 1].getTime() - scheduledTimes[i].getTime();
       if (gap > largestGap && gap >= minGapMs) {
         largestGap = gap;
-        // Suggest midpoint of the gap
-        const midpoint = new Date(scheduledTimes[i].getTime() + gap / 2);
-        suggestedTime = midpoint;
+        
+        // Find optimal time within this gap
+        const gapStart = scheduledTimes[i];
+        const gapEnd = scheduledTimes[i + 1];
+        
+        // Try to find an optimal hour within the gap
+        let optimalSlot: Date | null = null;
+        for (const hour of optimalHours) {
+          const candidate = new Date(gapStart);
+          candidate.setHours(hour, 0, 0, 0);
+          
+          // If candidate is within the gap and meets minimum spacing
+          if (candidate.getTime() > gapStart.getTime() + minGapMs &&
+              candidate.getTime() < gapEnd.getTime() - minGapMs) {
+            optimalSlot = candidate;
+            break;
+          }
+        }
+        
+        // Use optimal slot if found, otherwise use midpoint
+        suggestedTime = optimalSlot || new Date(gapStart.getTime() + gap / 2);
       }
     }
 

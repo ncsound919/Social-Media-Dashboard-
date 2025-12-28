@@ -191,9 +191,12 @@ export class MobileSyncService {
   } {
     const timeUntil = this.getTimeUntilScheduled(notification.scheduledFor);
     
+    // Unicode-aware truncation to 100 characters
+    const truncatedCaption = this.truncateUnicodeSafe(notification.caption, 100);
+    
     return {
       title: `Time to publish on ${notification.platform}`,
-      body: `${notification.caption.substring(0, 100)}... - Publishing in ${timeUntil}`,
+      body: `${truncatedCaption}... - Publishing in ${timeUntil}`,
       data: {
         notificationId: notification.id,
         postDraftId: notification.postDraftId,
@@ -201,6 +204,19 @@ export class MobileSyncService {
         deepLink: this.generateMobilePublishLink(notification),
       },
     };
+  }
+
+  /**
+   * Truncate text safely at character boundaries (Unicode-aware)
+   */
+  private truncateUnicodeSafe(text: string, maxLength: number): string {
+    if (text.length <= maxLength) return text;
+    
+    // Use Array.from to handle multi-byte characters correctly
+    const chars = Array.from(text);
+    if (chars.length <= maxLength) return text;
+    
+    return chars.slice(0, maxLength).join('');
   }
 
   /**
@@ -247,8 +263,10 @@ export class MobileSyncService {
     const devices = this.getAllDevices().filter(d => d.isActive);
     const payload = this.getNotificationPayload(notification);
 
-    // Log for debugging (in production, this would send to push service)
-    console.log('Sending push notification to', devices.length, 'devices:', payload);
+    // Log for debugging in non-production environments
+    if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production') {
+      console.log('Sending push notification to', devices.length, 'devices:', payload);
+    }
     
     // In a real implementation:
     // - Use Firebase Cloud Messaging (FCM) for Android

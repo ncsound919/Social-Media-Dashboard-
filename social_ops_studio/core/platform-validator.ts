@@ -3,7 +3,7 @@
  * Backend Reliability: Validate content against platform rules before upload
  */
 
-import { Platform, PostDraft, PlatformVariant, ValidationError } from '../data/models';
+import { Platform, PlatformVariant, ValidationError } from '../data/models';
 
 export interface PlatformRules {
   maxTextLength: number;
@@ -143,15 +143,27 @@ export class PlatformValidator {
     }
 
     // Thumbnail validation for video platforms
-    if (rules.requiresThumbnail && !variant.customThumbnailId && variant.mediaIds.length > 0) {
-      errors.push({
-        field: 'customThumbnailId',
-        message: 'Custom thumbnail is required for video content on this platform',
-        platform,
-      });
+    // Only validate if platform requires thumbnails AND we have media files AND at least one is video
+    if (rules.requiresThumbnail && variant.mediaIds.length > 0) {
+      const hasVideoContent = this.hasVideoMedia(mediaFiles);
+      if (hasVideoContent && !variant.customThumbnailId) {
+        errors.push({
+          field: 'customThumbnailId',
+          message: 'Custom thumbnail is required for video content on this platform',
+          platform,
+        });
+      }
     }
 
     return errors;
+  }
+
+  /**
+   * Check if media files contain video content
+   */
+  private hasVideoMedia(mediaFiles?: File[]): boolean {
+    if (!mediaFiles || mediaFiles.length === 0) return false;
+    return mediaFiles.some(file => file.type.startsWith('video/'));
   }
 
   /**

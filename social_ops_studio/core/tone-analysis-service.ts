@@ -4,7 +4,6 @@
  */
 
 import { ToneAnalysisResult, PostDraft } from '../data/models';
-import { v4 as uuidv4 } from 'uuid';
 
 export interface BrandVoice {
   preferredTones: string[];
@@ -38,9 +37,14 @@ const toneSignals: ToneSignals = {
 // Pre-compile regex patterns for performance
 const compiledTonePatterns: Record<string, RegExp[]> = {};
 Object.entries(toneSignals).forEach(([tone, signals]) => {
-  compiledTonePatterns[tone] = signals.map((signal: string) => 
-    new RegExp(`\\b${signal}\\b`, 'gi')
-  );
+  compiledTonePatterns[tone] = signals.map((signal: string) => {
+    // Escape regex metacharacters so signals (including emojis and phrases) are matched literally
+    const escapedSignal = signal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Only use word boundaries for simple word-like signals (letters/digits only)
+    const isWordLike = /^[A-Za-z0-9]+$/.test(signal);
+    const pattern = isWordLike ? `\\b${escapedSignal}\\b` : escapedSignal;
+    return new RegExp(pattern, 'gi');
+  });
 });
 
 export class ToneAnalysisService {
@@ -88,7 +92,8 @@ export class ToneAnalysisService {
       }
     });
 
-    return text.toLowerCase();
+    // Preserve original text for case pattern analysis
+    return text;
   }
 
   /**
@@ -96,15 +101,22 @@ export class ToneAnalysisService {
    */
   private detectTones(text: string): Record<string, number> {
     const toneScores: Record<string, number> = {};
+    const lowerText = text.toLowerCase();
 
     Object.entries(compiledTonePatterns).forEach(([tone, patterns]) => {
       let score = 0;
       patterns.forEach((regex: RegExp) => {
-        const matches = text.match(regex);
+        const matches = lowerText.match(regex);
         score += matches ? matches.length : 0;
       });
       toneScores[tone] = score;
     });
+
+    // Check for ALL CAPS patterns (urgency indicator)
+    const wordsInAllCaps = text.match(/\b[A-Z]{2,}\b/g);
+    if (wordsInAllCaps && wordsInAllCaps.length > 2) {
+      toneScores['urgent'] = (toneScores['urgent'] || 0) + wordsInAllCaps.length;
+    }
 
     return toneScores;
   }

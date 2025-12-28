@@ -3,8 +3,7 @@
  * Backend Reliability: Idempotency keys and intelligent retry logic
  */
 
-import { v4 as uuidv4 } from 'uuid';
-import { ScheduledPost, Platform } from '../data/models';
+import { ScheduledPost } from '../data/models';
 
 export type ErrorType = 'transient' | 'permanent' | 'unknown';
 
@@ -18,7 +17,7 @@ export interface RetryConfig {
 const defaultRetryConfig: RetryConfig = {
   maxRetries: 3,
   initialDelay: 1000,
-  maxDelay: 30000,
+  maxDelay: 10000,
   backoffMultiplier: 2,
 };
 
@@ -30,11 +29,13 @@ export class PublishingReliability {
   }
 
   /**
-   * Generate a unique idempotency key for a post
+   * Generate a deterministic idempotency key for a post
    * Prevents duplicate posts if network stutters
+   * Uses stable properties to ensure same operation generates same key
    */
   generateIdempotencyKey(scheduledPost: ScheduledPost): string {
-    return `${scheduledPost.accountId}-${scheduledPost.postDraftId}-${uuidv4()}`;
+    const timestamp = new Date(scheduledPost.scheduledFor).getTime();
+    return `${scheduledPost.accountId}-${scheduledPost.postDraftId}-${timestamp}`;
   }
 
   /**
@@ -131,7 +132,7 @@ export class PublishingReliability {
     let lastError: Error | null = null;
     let retryCount = scheduledPost.retryCount || 0;
 
-    while (retryCount <= this.retryConfig.maxRetries) {
+    while (retryCount < this.retryConfig.maxRetries) {
       try {
         return await fn();
       } catch (error) {

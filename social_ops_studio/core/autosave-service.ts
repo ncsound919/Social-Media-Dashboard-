@@ -19,7 +19,8 @@ const defaultAutosaveConfig: AutosaveConfig = {
 
 export class AutosaveService {
   private readonly config: AutosaveConfig;
-  private autosaveTimers: Map<string, NodeJS.Timeout> = new Map();
+  private autosaveTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+  private intervalTimers: Map<string, ReturnType<typeof setInterval>> = new Map();
   private pendingChanges: Map<string, Partial<PostDraft>> = new Map();
   private readonly storageKey = 'autosave_states';
 
@@ -40,18 +41,25 @@ export class AutosaveService {
       this.saveState(draft);
     }, this.config.interval);
 
-    this.autosaveTimers.set(postDraftId, timer);
+    this.intervalTimers.set(postDraftId, timer);
   }
 
   /**
    * Stop autosaving for a post draft
    */
   stopAutosave(postDraftId: string): void {
-    const timer = this.autosaveTimers.get(postDraftId);
-    if (timer) {
-      clearInterval(timer);
-      this.autosaveTimers.delete(postDraftId);
+    const intervalTimer = this.intervalTimers.get(postDraftId);
+    if (intervalTimer) {
+      clearInterval(intervalTimer);
+      this.intervalTimers.delete(postDraftId);
     }
+    
+    const debounceTimer = this.autosaveTimers.get(`debounce_${postDraftId}`);
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+      this.autosaveTimers.delete(`debounce_${postDraftId}`);
+    }
+    
     this.pendingChanges.delete(postDraftId);
   }
 
@@ -194,7 +202,9 @@ export class AutosaveService {
    */
   cleanup(): void {
     this.autosaveTimers.forEach(timer => clearTimeout(timer));
+    this.intervalTimers.forEach(timer => clearInterval(timer));
     this.autosaveTimers.clear();
+    this.intervalTimers.clear();
     this.pendingChanges.clear();
   }
 }

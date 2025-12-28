@@ -64,26 +64,35 @@ export class LinkManager {
    */
   private generateShortCode(length: number = 6): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let attempts = 0;
     const maxAttempts = 10;
-    
-    while (attempts < maxAttempts) {
-      let result = '';
-      for (let i = 0; i < length; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    const maxLength = 12;
+
+    let currentLength = length;
+
+    while (currentLength <= maxLength) {
+      let attempts = 0;
+
+      while (attempts < maxAttempts) {
+        let result = '';
+        for (let i = 0; i < currentLength; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+
+        // Check for collision
+        const existing = this.getByCode(result);
+        if (!existing) {
+          return result;
+        }
+
+        attempts++;
       }
-      
-      // Check for collision
-      const existing = this.getByCode(result);
-      if (!existing) {
-        return result;
-      }
-      
-      attempts++;
+
+      // If collisions persist after max attempts, increase length and retry
+      currentLength++;
     }
-    
-    // If collision after max attempts, increase length
-    return this.generateShortCode(length + 1);
+
+    // If we reach here, we failed to generate a unique code within limits
+    throw new Error('Unable to generate a unique short code');
   }
 
   /**
@@ -97,16 +106,21 @@ export class LinkManager {
    * Get the original URL with UTM parameters appended
    */
   getOriginalUrlWithUtm(shortLink: ShortLink): string {
-    const url = new URL(shortLink.originalUrl);
-    const utm = shortLink.utmParameters;
+    try {
+      const url = new URL(shortLink.originalUrl);
+      const utm = shortLink.utmParameters;
 
-    url.searchParams.set('utm_source', utm.source);
-    url.searchParams.set('utm_medium', utm.medium);
-    if (utm.campaign) url.searchParams.set('utm_campaign', utm.campaign);
-    if (utm.term) url.searchParams.set('utm_term', utm.term);
-    if (utm.content) url.searchParams.set('utm_content', utm.content);
+      url.searchParams.set('utm_source', utm.source);
+      url.searchParams.set('utm_medium', utm.medium);
+      if (utm.campaign) url.searchParams.set('utm_campaign', utm.campaign);
+      if (utm.term) url.searchParams.set('utm_term', utm.term);
+      if (utm.content) url.searchParams.set('utm_content', utm.content);
 
-    return url.toString();
+      return url.toString();
+    } catch {
+      // Fallback: if the originalUrl is not a valid URL, return it unchanged
+      return shortLink.originalUrl;
+    }
   }
 
   /**
