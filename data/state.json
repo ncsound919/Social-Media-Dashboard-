@@ -1,0 +1,397 @@
+{
+  "profile": {
+    "business_name": "Acme Components",
+    "owner": "You"
+  },
+  "segments": [
+    {
+      "name": "New Leads",
+      "criteria": [
+        "Created < 30 days",
+        "Matches ICP industries"
+      ],
+      "size": 34,
+      "nurtured": 23
+    },
+    {
+      "name": "Active Customers",
+      "criteria": [
+        "Touched product in last 14 days"
+      ],
+      "size": 18,
+      "nurtured": 15
+    },
+    {
+      "name": "Dormant Accounts",
+      "criteria": [
+        "No activity > 30 days"
+      ],
+      "size": 12,
+      "nurtured": 5
+    }
+  ],
+  "campaigns": [
+    {
+      "name": "Onboarding Drip",
+      "segment": "New Leads",
+      "trigger": "Sign-up form",
+      "channel": "Email",
+      "template": "Welcome Series",
+      "status": "scheduled",
+      "next_send": "2025-12-29"
+    },
+    {
+      "name": "Win-back Sequence",
+      "segment": "Dormant Accounts",
+      "trigger": "Inactivity 30d",
+      "channel": "Email",
+      "template": "Re-engagement",
+      "status": "ready",
+      "next_send": "2025-12-29"
+    },
+    {
+      "name": "Post-demo Follow-up",
+      "segment": "Active Customers",
+      "trigger": "Demo completed",
+      "channel": "Email + Call task",
+      "template": "Demo Recap",
+      "status": "running",
+      "next_send": "2025-12-28"
+    }
+  ],
+  "templates": [
+    {
+      "name": "Welcome Series",
+      "medium": "Email",
+      "purpose": "Onboarding",
+      "last_updated": "2025-12-28"
+    },
+    {
+      "name": "Re-engagement",
+      "medium": "Email",
+      "purpose": "Win-back",
+      "last_updated": "2025-12-28"
+    },
+    {
+      "name": "Product Tour Deck",
+      "medium": "Presentation",
+      "purpose": "Sales enablement",
+      "last_updated": "2025-12-28"
+    }
+  ],
+  "quick_templates": [
+    {
+      "name": "Demo Follow-up",
+      "copy": "Thanks for the demo! Here's what we discussed...",
+      "purpose": "Post-demo nurture"
+    },
+    {
+      "name": "Quarterly Business Review",
+      "copy": "Let's review your progress this quarter...",
+      "purpose": "Customer success"
+    },
+    {
+      "name": "Feature Announcement",
+      "copy": "We've just launched a new feature...",
+      "purpose": "Product updates"
+    },
+    {
+      "name": "Case Study Request",
+      "copy": "Your success story would inspire others...",
+      "purpose": "Social proof"
+    },
+    {
+      "name": "Renewal Reminder",
+      "copy": "Your subscription renews soon...",
+      "purpose": "Retention"
+    },
+    {
+      "name": "Webinar Invitation",
+      "copy": "Join us for an exclusive webinar...",
+      "purpose": "Education"
+    },
+    {
+      "name": "Free Trial Ending",
+      "copy": "Your trial ends in 3 days...",
+      "purpose": "Conversion"
+    },
+    {
+      "name": "Welcome to Beta",
+      "copy": "You're in! Here's how to get started...",
+      "purpose": "Beta onboarding"
+    },
+    {
+      "name": "Referral Request",
+      "copy": "Know someone who'd benefit?",
+      "purpose": "Growth"
+    },
+    {
+      "name": "Survey Request",
+      "copy": "Help us improve with 2 quick questions...",
+      "purpose": "Feedback"
+    },
+    {
+      "name": "Holiday Greeting",
+      "copy": "Happy holidays from our team...",
+      "purpose": "Relationship building"
+    },
+    {
+      "name": "Product Update Digest",
+      "copy": "Here's what's new this month...",
+      "purpose": "Engagement"
+    }
+  ],
+  "benchmarks": {
+    "open_rate": 0.28,
+    "click_rate": 0.15,
+    "reply_rate": 0.1,
+    "industry": "B2B SaaS"
+  },
+  "integrations": [
+    {
+      "name": "CRM (HubSpot)",
+      "status": "connected",
+      "detail": "API token valid"
+    },
+    {
+      "name": "Email (SendGrid)",
+      "status": "connected",
+      "detail": "Sender verified"
+    },
+    {
+      "name": "Social (LinkedIn)",
+      "status": "pending",
+      "detail": "OAuth to finish"
+    }
+  ],
+  "connectors": [
+    {
+      "name": "HubSpot contacts",
+      "status": "connected",
+      "last_sync": "2025-12-28",
+      "detail": "Contacts + deals"
+    },
+    {
+      "name": "LinkedIn Ads",
+      "status": "pending",
+      "last_sync": "\u2014",
+      "detail": "Finish OAuth to pull audiences"
+    },
+    {
+      "name": "SendGrid events",
+      "status": "connected",
+      "last_sync": "2025-12-28",
+      "detail": "Bounces + clicks ingested"
+    }
+  ],
+  "backend": [
+    {
+      "service": "Engagement API",
+      "status": "healthy",
+      "latency_ms": 180,
+      "error_rate": "0.2%",
+      "version": "v1.4.2"
+    },
+    {
+      "service": "Automation Worker",
+      "status": "degraded",
+      "latency_ms": 420,
+      "error_rate": "1.1%",
+      "version": "v1.3.9"
+    }
+  ],
+  "databases": [
+    {
+      "name": "Postgres",
+      "role": "Primary",
+      "status": "healthy",
+      "storage_gb": 12.4,
+      "connections": 58
+    },
+    {
+      "name": "Redis",
+      "role": "Cache",
+      "status": "healthy",
+      "storage_gb": 1.1,
+      "connections": 14
+    }
+  ],
+  "analytics": {
+    "open_rate": 0.46,
+    "click_rate": 0.23,
+    "reply_rate": 0.14,
+    "conversions": 5,
+    "ab_tests": [
+      {
+        "name": "CTA copy",
+        "winner": "Book a call",
+        "uplift": 0.12
+      },
+      {
+        "name": "Send time",
+        "winner": "09:00",
+        "uplift": 0.08
+      }
+    ]
+  },
+  "feedback": [
+    {
+      "name": "Post-demo pulse",
+      "question": "How clear was the value prop?",
+      "last_sent": "2025-12-28",
+      "responses": 12
+    },
+    {
+      "name": "Onboarding check-in",
+      "question": "Did you activate the core workflow?",
+      "last_sent": "2025-12-28",
+      "responses": 8
+    }
+  ],
+  "actions": [
+    {
+      "title": "A/B test CTA for New Leads",
+      "due": "2025-12-28",
+      "owner": "You"
+    },
+    {
+      "title": "Send nurture to Dormant Accounts",
+      "due": "2025-12-29",
+      "owner": "You"
+    },
+    {
+      "title": "Sync CRM deal stages",
+      "due": "2025-12-29",
+      "owner": "You"
+    }
+  ],
+  "strategies": [
+    {
+      "name": "ABM",
+      "full_name": "Account-Based Marketing",
+      "description": "Target high-value accounts with personalized campaigns",
+      "steps": [
+        "Identify target accounts",
+        "Personalize content",
+        "Multi-channel outreach",
+        "Measure engagement"
+      ],
+      "channels": [
+        "Email",
+        "LinkedIn",
+        "Call"
+      ],
+      "best_for_segments": [
+        "New Leads",
+        "Active Customers"
+      ]
+    },
+    {
+      "name": "AIDA",
+      "full_name": "Attention-Interest-Desire-Action",
+      "description": "Classic content funnel framework",
+      "steps": [
+        "Grab attention",
+        "Build interest",
+        "Create desire",
+        "Drive action"
+      ],
+      "channels": [
+        "Email",
+        "Social",
+        "Ads"
+      ],
+      "best_for_segments": [
+        "All"
+      ]
+    },
+    {
+      "name": "RACE",
+      "full_name": "Reach-Act-Convert-Engage",
+      "description": "Omnichannel planning framework",
+      "steps": [
+        "Reach new audience",
+        "Act/Interact",
+        "Convert to leads",
+        "Engage long-term"
+      ],
+      "channels": [
+        "Social",
+        "Email",
+        "Website"
+      ],
+      "best_for_segments": [
+        "New Leads",
+        "Dormant Accounts"
+      ]
+    },
+    {
+      "name": "7Ps",
+      "full_name": "7Ps Marketing Mix",
+      "description": "Holistic B2B planning framework",
+      "steps": [
+        "Product",
+        "Price",
+        "Place",
+        "Promotion",
+        "People",
+        "Process",
+        "Physical Evidence"
+      ],
+      "channels": [
+        "All"
+      ],
+      "best_for_segments": [
+        "Active Customers"
+      ]
+    }
+  ],
+  "videos": [
+    {
+      "template": "Product Tour Deck",
+      "output_path": "data/videos/product_tour.mp4",
+      "duration": 45,
+      "status": "ready",
+      "generated": "2025-12-20"
+    }
+  ],
+  "automation_rules": {
+    "SMB_CTO": {
+      "segment": "Tech Leads",
+      "cadence": "0-3-7",
+      "channel": "Email+LinkedIn",
+      "keywords": [
+        "smb",
+        "cto",
+        "tech lead",
+        "technical",
+        "small business",
+        "medium business"
+      ]
+    },
+    "Enterprise": {
+      "segment": "VP Sales",
+      "cadence": "0-5-14-30",
+      "ab_tests": 3,
+      "keywords": [
+        "enterprise",
+        "vp",
+        "sales",
+        "large",
+        "corporation"
+      ]
+    },
+    "Demo_video": {
+      "variants": 2,
+      "length": 90,
+      "format": "MP4 vertical",
+      "keywords": [
+        "demo",
+        "video",
+        "presentation",
+        "recording",
+        "mp4"
+      ]
+    }
+  }
+}
