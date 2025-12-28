@@ -53,7 +53,7 @@
             "models.py": {
               "add_tables": [
                 "Campaign",
-                "A/BTest",
+                "ABTest",
                 "ContentAsset", 
                 "LinkShort",
                 "NotificationRule",
@@ -76,6 +76,30 @@
         "ContentAsset": {
           "fields": ["id", "filename", "tags", "performance_score", "usage_count", "file_path"],
           "types": ["image", "video", "template"]
+        },
+        "LinkShort": {
+          "fields": ["id", "original_url", "short_code", "post_id", "click_count", "created_at"],
+          "relations": ["post_draft"]
+        },
+        "NotificationRule": {
+          "fields": ["id", "name", "trigger_type", "threshold", "enabled", "recipients"],
+          "relations": ["team_members"]
+        },
+        "TeamMember": {
+          "fields": ["id", "email", "role", "permissions", "invited_at", "status"],
+          "relations": ["accounts"]
+        },
+        "ListeningTopic": {
+          "fields": ["id", "keywords", "sentiment_threshold", "alert_enabled", "last_checked"],
+          "relations": []
+        },
+        "CuratedItem": {
+          "fields": ["id", "source_url", "title", "description", "published_at", "commentary"],
+          "relations": ["post_drafts"]
+        },
+        "Alert": {
+          "fields": ["id", "alert_type", "metric_name", "threshold", "current_value", "triggered_at"],
+          "relations": ["accounts"]
         }
       },
       "core_services": {
@@ -126,7 +150,7 @@
         "6_social_listening": {
           "class": "SocialListening",
           "methods": [
-            "monitor_keywords(keywords: list[str]) -> list[Topic]",
+            "monitor_keywords(keywords: list[str]) -> list[ListeningTopic]",
             "detect_crisis(mentions: list) -> bool",
             "find_trending_topics() -> list[str]"
           ]
