@@ -56,12 +56,12 @@ python marketing_tool.py --add-campaign \
    ```
    The snapshot is saved to `docs/dashboard_snapshot.svg` with your business name as a watermark.
 
-5. Get a quick morning brief with today's focus and top 3 metrics:
+6. Get a quick morning brief with today's focus and top 3 metrics:
    ```bash
    python marketing_tool.py --brief
    ```
 
-6. Export individual status cards for sharing in Slack/Teams:
+7. Export individual status cards for sharing in Slack/Teams:
    ```bash
    python marketing_tool.py --export-cards
    ```

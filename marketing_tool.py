@@ -276,9 +276,24 @@ def sample_state() -> Dict[str, Any]:
             },
         ],
         "automation_rules": {
-            "SMB_CTO": {"segment": "Tech Leads", "cadence": "0-3-7", "channel": "Email+LinkedIn"},
-            "Enterprise": {"segment": "VP Sales", "cadence": "0-5-14-30", "ab_tests": 3},
-            "Demo_video": {"variants": 2, "length": 90, "format": "MP4 vertical"},
+            "SMB_CTO": {
+                "segment": "Tech Leads",
+                "cadence": "0-3-7",
+                "channel": "Email+LinkedIn",
+                "keywords": ["smb", "cto", "tech lead", "technical", "small business", "medium business"],
+            },
+            "Enterprise": {
+                "segment": "VP Sales",
+                "cadence": "0-5-14-30",
+                "ab_tests": 3,
+                "keywords": ["enterprise", "vp", "sales", "large", "corporation"],
+            },
+            "Demo_video": {
+                "variants": 2,
+                "length": 90,
+                "format": "MP4 vertical",
+                "keywords": ["demo", "video", "presentation", "recording", "mp4"],
+            },
         },
     }
 
@@ -1032,20 +1047,25 @@ def generate_auto_plan(creative_idea: str, automation_rules: Dict[str, Any] | No
     Returns:
         Dict containing the matched rule and auto-configured plan
     """
+    # Load the actual rules - use provided rules or load from sample state
+    if automation_rules is None:
+        state = sample_state()
+        automation_rules = state.get("automation_rules", {})
+    
     if not creative_idea or not creative_idea.strip():
         # Handle empty input gracefully
         creative_idea = "General campaign"
     
     idea_lower = creative_idea.lower()
     
-    # Define keyword patterns for each rule
-    # NOTE: These patterns are hardcoded and must be kept in sync with automation_rules
-    # in sample_state(). If you add/modify rules, update both locations.
-    rule_patterns = {
-        "SMB_CTO": ["smb", "cto", "tech lead", "technical", "small business", "medium business"],
-        "Enterprise": ["enterprise", "vp", "sales", "large", "corporation"],
-        "Demo_video": ["demo", "video", "presentation", "recording", "mp4"],
-    }
+    # Extract keyword patterns from automation rules
+    # This ensures patterns stay in sync with automation_rules automatically
+    rule_patterns = {}
+    for rule_name, rule_config in automation_rules.items():
+        keywords = rule_config.get("keywords")
+        if keywords:
+            rule_patterns[rule_name] = keywords
+        # Note: Rules without keywords will be skipped from pattern matching
     
     # Score each rule based on keyword matches
     scores = {}
@@ -1074,11 +1094,6 @@ def generate_auto_plan(creative_idea: str, automation_rules: Dict[str, Any] | No
     
     if not matched_rule:
         return default_plan
-    
-    # Load the actual rules - use provided rules or load from sample state
-    if automation_rules is None:
-        state = sample_state()
-        automation_rules = state.get("automation_rules", {})
     
     rule_config = automation_rules.get(matched_rule, {})
     
