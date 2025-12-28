@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useAppStore } from '@/app/store';
 import { MetricCard, MetricRow } from '@/ui/metric-card';
 import { ChartCard } from '@/ui/chart-card';
@@ -12,7 +12,6 @@ import {
   Heart,
   MessageSquare,
   Share2,
-  Bookmark,
   Clock
 } from 'lucide-react';
 import { formatRelativeDate } from '@/utils/timeutils';
@@ -99,9 +98,9 @@ const mockActivityFeed: ActivityItem[] = [
 ];
 
 export function DashboardOverview() {
-  const { accounts, scheduledPosts, drafts } = useAppStore();
-  const [engagementData, setEngagementData] = useState(generateMockEngagementData(30));
-  const [platformData, setPlatformData] = useState(generateMockPlatformData());
+  const { accounts, scheduledPosts } = useAppStore();
+  const [engagementData] = useState(generateMockEngagementData(30));
+  const [platformData] = useState(generateMockPlatformData());
 
   // Calculate metrics
   const totalReach = 287500;

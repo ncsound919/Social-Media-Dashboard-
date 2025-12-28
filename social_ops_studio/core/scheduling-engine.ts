@@ -5,7 +5,7 @@
 
 import { ScheduledPostRepository, PostDraftRepository, AccountRepository } from '@/data/repository';
 import { ScheduledPost, PostDraft, Account, Platform } from '@/data/models';
-import { addDays, addHours, startOfDay, endOfDay, isWithinInterval, parseISO } from 'date-fns';
+import { addDays, addHours, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import { logger } from '@/utils/logging';
 
 export interface TimeSlot {

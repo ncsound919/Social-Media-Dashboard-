@@ -1,18 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useAppStore } from '@/app/store';
 import { 
   Plus, 
   Search, 
-  Filter, 
   GripVertical,
   MoreHorizontal,
-  Calendar,
   Image,
-  Video,
-  FileText,
-  Clock
+  Video
 } from 'lucide-react';
 import clsx from 'clsx';
 import { ContentStatus, Platform } from '@/data/models';

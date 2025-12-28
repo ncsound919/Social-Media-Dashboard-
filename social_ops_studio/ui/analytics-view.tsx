@@ -2,36 +2,18 @@
 
 import { useState } from 'react';
 import { ChartCard } from '@/ui/chart-card';
-import { MetricCard, MetricRow } from '@/ui/metric-card';
+import { MetricRow } from '@/ui/metric-card';
 import { 
   TrendingUp, 
-  TrendingDown,
   Users, 
   Eye, 
   Heart, 
-  MessageSquare,
-  Share2,
-  Bookmark,
   Clock,
   Target
 } from 'lucide-react';
 import clsx from 'clsx';
 import { subDays, format } from 'date-fns';
-import { Platform } from '@/data/models';
-
 type AnalyticsTab = 'overview' | 'platform' | 'content' | 'experiments';
-
-const platformColors: Record<Platform, string> = {
-  twitter_x: '#1DA1F2',
-  facebook_pages: '#1877F2',
-  instagram_business: '#E1306C',
-  linkedin_pages: '#0A66C2',
-  tiktok: '#FF0050',
-  youtube: '#FF0000',
-  pinterest: '#E60023',
-  threads: '#FFFFFF',
-  bluesky: '#0085FF',
-};
 
 // Generate mock data
 function generateFollowerGrowth(days: number) {

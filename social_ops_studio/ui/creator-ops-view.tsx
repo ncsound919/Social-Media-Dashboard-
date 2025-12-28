@@ -7,12 +7,9 @@ import {
   Plus, 
   Copy,
   ArrowRight,
-  Sparkles,
-  Clock,
-  Tag
+  Sparkles
 } from 'lucide-react';
 import clsx from 'clsx';
-import { ContentStatus } from '@/data/models';
 
 interface MicroBrief {
   id: string;
@@ -74,7 +71,7 @@ const toneOptions = ['Professional', 'Casual', 'Excited', 'Warm', 'Bold', 'Humor
 
 export function CreatorOpsView() {
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-  const [briefs, setBriefs] = useState(mockBriefs);
+  const [briefs] = useState(mockBriefs);
 
   const statusConfig = {
     draft: { label: 'Draft', color: 'text-yellow-400', bg: 'bg-yellow-500/10' },

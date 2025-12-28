@@ -6,9 +6,7 @@ import {
   Plus, 
   Play, 
   Pause,
-  BarChart3,
   ArrowUpRight,
-  ArrowDownRight,
   Clock,
   Target,
   Layers
@@ -103,7 +101,7 @@ const dimensionLabels: Record<string, string> = {
 };
 
 export function ExperimentsView() {
-  const [experiments, setExperiments] = useState(mockExperiments);
+  const [experiments] = useState(mockExperiments);
   const [selectedExperiment, setSelectedExperiment] = useState<Experiment | null>(null);
 
   const statusConfig = {

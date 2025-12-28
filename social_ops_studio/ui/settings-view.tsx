@@ -48,7 +48,7 @@ const mockAccounts: ConnectedAccount[] = [
 
 export function SettingsView() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
-  const [accounts, setAccounts] = useState(mockAccounts);
+  const [accounts] = useState(mockAccounts);
   
   // Settings state
   const [notifications, setNotifications] = useState({

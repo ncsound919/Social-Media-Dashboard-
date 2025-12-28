@@ -104,7 +104,7 @@ const actionLabels: Record<RuleActionType, string> = {
 
 export function AutomationView() {
   const [rules, setRules] = useState(mockRules);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [, setShowCreateModal] = useState(false);
 
   const toggleRule = (id: string) => {
     setRules(rules.map(r => 

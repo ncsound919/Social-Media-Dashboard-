@@ -9,9 +9,7 @@ import {
   Star,
   StarOff,
   Check,
-  Filter,
-  Search,
-  MoreHorizontal
+  Search
 } from 'lucide-react';
 import clsx from 'clsx';
 import { formatTimeAgo } from '@/utils/timeutils';

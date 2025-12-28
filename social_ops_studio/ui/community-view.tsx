@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { MetricCard, MetricRow } from '@/ui/metric-card';
+import { MetricRow } from '@/ui/metric-card';
 import { 
   Users, 
   BookOpen, 
