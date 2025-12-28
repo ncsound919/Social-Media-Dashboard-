@@ -14,6 +14,7 @@ import {
 import { Platform } from '@/data/models';
 import { platformConfig } from '@/core/config';
 import { logger } from '@/utils/logging';
+import { v4 as uuidv4 } from 'uuid';
 
 export class TwitterAdapter extends SocialPlatformAdapter {
   readonly platform: Platform = 'twitter_x';
@@ -41,7 +42,7 @@ export class TwitterAdapter extends SocialPlatformAdapter {
 
       return {
         success: true,
-        remoteId: `tw_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        remoteId: `tw_${uuidv4()}`,
         errorMessage: null,
         publishedAt: new Date(),
       };
@@ -85,7 +86,7 @@ export class TwitterAdapter extends SocialPlatformAdapter {
 
       return {
         success: true,
-        mediaId: `tw_media_${Date.now()}`,
+        mediaId: `tw_media_${uuidv4()}`,
         errorMessage: null,
       };
     } catch (error) {

@@ -34,9 +34,28 @@ class Logger {
     // In development, also output to console
     if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
       const consoleMethod = level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log';
+      // Sanitize data to avoid logging sensitive information
+      const sanitizedData = data ? this.sanitizeLogData(data) : undefined;
       // eslint-disable-next-line no-console
-      console[consoleMethod](`[${level.toUpperCase()}] ${message}`, data || '');
+      console[consoleMethod](`[${level.toUpperCase()}] ${message}`, sanitizedData || '');
     }
+  }
+
+  private sensitiveKeys = ['password', 'token', 'secret', 'key', 'authorization', 'credential', 'apiKey'];
+
+  private sanitizeLogData(data: Record<string, unknown>): Record<string, unknown> {
+    const sanitized: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(data)) {
+      const lowerKey = key.toLowerCase();
+      if (this.sensitiveKeys.some(sensitive => lowerKey.includes(sensitive))) {
+        sanitized[key] = '[REDACTED]';
+      } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        sanitized[key] = this.sanitizeLogData(value as Record<string, unknown>);
+      } else {
+        sanitized[key] = value;
+      }
+    }
+    return sanitized;
   }
 
   debug(message: string, data?: Record<string, unknown>): void {

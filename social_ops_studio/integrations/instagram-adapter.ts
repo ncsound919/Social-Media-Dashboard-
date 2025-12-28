@@ -14,6 +14,7 @@ import {
 import { Platform } from '@/data/models';
 import { platformConfig } from '@/core/config';
 import { logger } from '@/utils/logging';
+import { v4 as uuidv4 } from 'uuid';
 
 export class InstagramAdapter extends SocialPlatformAdapter {
   readonly platform: Platform = 'instagram_business';
@@ -47,7 +48,7 @@ export class InstagramAdapter extends SocialPlatformAdapter {
 
       return {
         success: true,
-        remoteId: `ig_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        remoteId: `ig_${uuidv4()}`,
         errorMessage: null,
         publishedAt: new Date(),
       };
@@ -98,7 +99,7 @@ export class InstagramAdapter extends SocialPlatformAdapter {
 
       return {
         success: true,
-        mediaId: `ig_media_${Date.now()}`,
+        mediaId: `ig_media_${uuidv4()}`,
         errorMessage: null,
       };
     } catch (error) {

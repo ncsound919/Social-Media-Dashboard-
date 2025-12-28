@@ -32,8 +32,14 @@ export interface StorageAdapter {
 export class LocalStorageAdapter implements StorageAdapter {
   private getCollection<T>(collection: string): Record<string, T> {
     if (typeof window === 'undefined') return {};
-    const data = localStorage.getItem(`sos_${collection}`);
-    return data ? JSON.parse(data) : {};
+    try {
+      const data = localStorage.getItem(`sos_${collection}`);
+      return data ? JSON.parse(data) : {};
+    } catch {
+      // If JSON is malformed, return empty collection and log error
+      console.error(`Failed to parse collection ${collection} from localStorage`);
+      return {};
+    }
   }
 
   private saveCollection<T>(collection: string, data: Record<string, T>): void {
