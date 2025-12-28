@@ -163,7 +163,20 @@ export class AIContentVerificationService {
 
     sentences.forEach(sentence => {
       const lower = sentence.toLowerCase();
-      if (factIndicators.some(indicator => lower.includes(indicator))) {
+      let matchCount = 0;
+      
+      // Count how many indicators are present
+      factIndicators.forEach(indicator => {
+        if (lower.includes(indicator)) {
+          matchCount++;
+        }
+      });
+      
+      // Require at least 2 indicators or specific high-confidence patterns
+      const hasPercentage = /\d+\s*%/.test(sentence);
+      const hasStatistic = /\d+/.test(sentence) && (lower.includes('research') || lower.includes('study'));
+      
+      if (matchCount >= 2 || hasPercentage || hasStatistic) {
         claims.push(sentence.trim());
       }
     });

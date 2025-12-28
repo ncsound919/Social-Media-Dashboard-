@@ -131,6 +131,9 @@ export class EvergreenContentService {
    * Suggest optimal time slots for recycled content
    */
   suggestRecycleSlot(existingSchedule: ScheduledPost[]): Date | null {
+    const minGapHours = 2; // Minimum 2 hours between posts
+    const minGapMs = minGapHours * 60 * 60 * 1000;
+    
     // Find gaps in the schedule
     const now = new Date();
     const futureDate = new Date();
@@ -149,13 +152,13 @@ export class EvergreenContentService {
       return tomorrow;
     }
 
-    // Find the largest gap between scheduled posts
+    // Find the largest gap between scheduled posts that meets minimum threshold
     let largestGap = 0;
     let suggestedTime: Date | null = null;
 
     for (let i = 0; i < scheduledTimes.length - 1; i++) {
       const gap = scheduledTimes[i + 1].getTime() - scheduledTimes[i].getTime();
-      if (gap > largestGap) {
+      if (gap > largestGap && gap >= minGapMs) {
         largestGap = gap;
         // Suggest midpoint of the gap
         const midpoint = new Date(scheduledTimes[i].getTime() + gap / 2);

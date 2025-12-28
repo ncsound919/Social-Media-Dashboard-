@@ -35,6 +35,14 @@ const toneSignals: ToneSignals = {
   empathetic: ['understand', 'appreciate', 'feel', 'support', 'care', 'here for you'],
 };
 
+// Pre-compile regex patterns for performance
+const compiledTonePatterns: Record<string, RegExp[]> = {};
+Object.entries(toneSignals).forEach(([tone, signals]) => {
+  compiledTonePatterns[tone] = signals.map((signal: string) => 
+    new RegExp(`\\b${signal}\\b`, 'gi')
+  );
+});
+
 export class ToneAnalysisService {
   private brandVoice: BrandVoice | null = null;
 
@@ -89,10 +97,9 @@ export class ToneAnalysisService {
   private detectTones(text: string): Record<string, number> {
     const toneScores: Record<string, number> = {};
 
-    Object.entries(toneSignals).forEach(([tone, signals]) => {
+    Object.entries(compiledTonePatterns).forEach(([tone, patterns]) => {
       let score = 0;
-      signals.forEach((signal: string) => {
-        const regex = new RegExp(`\\b${signal}\\b`, 'gi');
+      patterns.forEach((regex: RegExp) => {
         const matches = text.match(regex);
         score += matches ? matches.length : 0;
       });

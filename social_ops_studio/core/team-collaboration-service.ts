@@ -68,7 +68,12 @@ export class TeamCollaborationService {
   /**
    * Update team member role
    */
-  updateMemberRole(memberId: string, newRole: TeamRole): TeamMember | null {
+  updateMemberRole(memberId: string, newRole: TeamRole, callerId: string): TeamMember | null {
+    // Check if caller has permission to manage team
+    if (!this.hasPermission(callerId, 'manage_team')) {
+      throw new Error('User does not have permission to manage team members');
+    }
+
     const members = this.getAllTeamMembers();
     const member = members.find(m => m.id === memberId);
 

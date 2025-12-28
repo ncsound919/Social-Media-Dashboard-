@@ -64,11 +64,26 @@ export class LinkManager {
    */
   private generateShortCode(length: number = 6): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      let result = '';
+      for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      
+      // Check for collision
+      const existing = this.getByCode(result);
+      if (!existing) {
+        return result;
+      }
+      
+      attempts++;
     }
-    return result;
+    
+    // If collision after max attempts, increase length
+    return this.generateShortCode(length + 1);
   }
 
   /**
