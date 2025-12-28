@@ -137,7 +137,18 @@
         "refresh_token_encrypted",
         "last_sync_at",
         "scopes"
-      ]
+      ],
+      "security": {
+        "encryption_mechanism": "AES-256-GCM symmetric encryption with a unique random IV and authentication tag per record.",
+        "key_management": "Per-device encryption key stored in the operating system's secure key store (e.g., Keychain, DPAPI, KeyStore), with hardware-backed protection where available. Application code must never persist raw keys to disk or source control.",
+        "key_rotation": "Support rotation of the master encryption key; tokens are re-encrypted on rotation, and old keys are securely destroyed after migration.",
+        "data_handling": "Access and refresh tokens are decrypted only in memory when needed for OAuth calls and are cleared from memory as soon as practical.",
+        "standards": [
+          "Follow OWASP Application Security Verification Standard (ASVS) recommendations for credential storage.",
+          "Use a vetted cryptographic library provided by the platform/runtime (no custom crypto).",
+          "Use a secure key-derivation function (e.g., PBKDF2, Argon2, or platform equivalent) if user secrets are ever used to derive encryption keys."
+        ]
+      }
     }
   },
 
