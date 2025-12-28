@@ -1047,24 +1047,25 @@ def generate_auto_plan(creative_idea: str, automation_rules: Dict[str, Any] | No
     Returns:
         Dict containing the matched rule and auto-configured plan
     """
+    # Load the actual rules - use provided rules or load from sample state
+    if automation_rules is None:
+        state = sample_state()
+        automation_rules = state.get("automation_rules", {})
+    
     if not creative_idea or not creative_idea.strip():
         # Handle empty input gracefully
         creative_idea = "General campaign"
     
     idea_lower = creative_idea.lower()
     
-    # Load the actual rules - use provided rules or load from sample state
-    if automation_rules is None:
-        state = sample_state()
-        automation_rules = state.get("automation_rules", {})
-    
     # Extract keyword patterns from automation rules
     # This ensures patterns stay in sync with automation_rules automatically
     rule_patterns = {}
     for rule_name, rule_config in automation_rules.items():
-        keywords = rule_config.get("keywords", [])
+        keywords = rule_config.get("keywords")
         if keywords:
             rule_patterns[rule_name] = keywords
+        # Note: Rules without keywords will be skipped from pattern matching
     
     # Score each rule based on keyword matches
     scores = {}
