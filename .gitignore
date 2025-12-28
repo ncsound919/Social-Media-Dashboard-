@@ -20,12 +20,16 @@ wheels/
 .installed.cfg
 *.egg
 
+# Data files
+data/
+
 # Virtual environments
 venv/
-ENV/
 env/
+ENV/
+.venv
 
-# IDEs
+# IDE
 .vscode/
 .idea/
 *.swp
@@ -35,7 +39,3 @@ env/
 # OS
 .DS_Store
 Thumbs.db
-
-# Project specific
-data/
-docs/*.svg

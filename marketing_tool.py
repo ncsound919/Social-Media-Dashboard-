@@ -6,7 +6,7 @@ import argparse
 import json
 from datetime import date, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List
 
 from rich import box
 from rich.align import Align
@@ -53,7 +53,7 @@ def _today_iso() -> str:
     return datetime.now().date().isoformat()
 
 
-def sample_state() -> dict[str, Any]:
+def sample_state() -> Dict[str, Any]:
     tomorrow = datetime.now().date() + timedelta(days=1)
     return {
         "profile": {"business_name": "Acme Components", "owner": "You"},
@@ -276,32 +276,45 @@ def sample_state() -> dict[str, Any]:
             },
         ],
         "automation_rules": {
-            "SMB_CTO": {"segment": "Tech Leads", "cadence": "0-3-7", "channel": "Email+LinkedIn"},
-            "Enterprise": {"segment": "VP Sales", "cadence": "0-5-14-30", "ab_tests": 3},
-            "Demo_video": {"variants": 2, "length": 90, "format": "MP4 vertical"},
+            "SMB_CTO": {
+                "segment": "Tech Leads",
+                "cadence": "0-3-7",
+                "channel": "Email+LinkedIn",
+                "keywords": ["smb", "cto", "tech lead", "technical", "small business", "medium business"],
+            },
+            "Enterprise": {
+                "segment": "VP Sales",
+                "cadence": "0-5-14-30",
+                "ab_tests": 3,
+                "keywords": ["enterprise", "vp", "sales", "large", "corporation"],
+            },
+            "Demo_video": {
+                "variants": 2,
+                "length": 90,
+                "format": "MP4 vertical",
+                "keywords": ["demo", "video", "presentation", "recording", "mp4"],
+            },
         },
     }
 
 
-def load_state() -> dict[str, Any]:
+def load_state() -> Dict[str, Any]:
     if not DATA_PATH.exists():
         return reset_state()
     try:
         with DATA_PATH.open("r", encoding="utf-8") as handle:
             return json.load(handle)
     except json.JSONDecodeError:
-        console = themed_console()
-        console.print("[warning]⚠ State file corrupted, resetting to sample data[/warning]")
         return reset_state()
 
 
-def save_state(state: dict[str, Any]) -> None:
+def save_state(state: Dict[str, Any]) -> None:
     DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
     with DATA_PATH.open("w", encoding="utf-8") as handle:
         json.dump(state, handle, indent=2)
 
 
-def reset_state() -> dict[str, Any]:
+def reset_state() -> Dict[str, Any]:
     state = sample_state()
     save_state(state)
     return state
@@ -328,7 +341,7 @@ def format_pct(value: float) -> str:
     return f"{value * 100:.1f}%"
 
 
-def build_campaign_table(state: dict[str, Any]) -> Table:
+def build_campaign_table(state: Dict[str, Any]) -> Table:
     table = Table(
         title="Automation",
         box=box.SIMPLE_HEAVY,
@@ -361,7 +374,7 @@ def build_campaign_table(state: dict[str, Any]) -> Table:
     return table
 
 
-def build_segment_table(state: dict[str, Any]) -> Table:
+def build_segment_table(state: Dict[str, Any]) -> Table:
     table = Table(
         title="Segments",
         box=box.MINIMAL_HEAVY_HEAD,
@@ -393,7 +406,7 @@ def build_segment_table(state: dict[str, Any]) -> Table:
     return table
 
 
-def build_template_table(state: dict[str, Any]) -> Table:
+def build_template_table(state: Dict[str, Any]) -> Table:
     table = Table(
         title="Creation Studio",
         box=box.MINIMAL_DOUBLE_HEAD,
@@ -418,7 +431,7 @@ def build_template_table(state: dict[str, Any]) -> Table:
     return table
 
 
-def build_strategies_table(state: dict[str, Any]) -> Table:
+def build_strategies_table(state: Dict[str, Any]) -> Table:
     table = Table(
         title="Strategies",
         box=box.MINIMAL_DOUBLE_HEAD,
@@ -446,7 +459,7 @@ def build_strategies_table(state: dict[str, Any]) -> Table:
     return table
 
 
-def build_videos_table(state: dict[str, Any]) -> Table:
+def build_videos_table(state: Dict[str, Any]) -> Table:
     table = Table(
         title="Videos",
         box=box.MINIMAL_DOUBLE_HEAD,
@@ -477,7 +490,7 @@ def build_videos_table(state: dict[str, Any]) -> Table:
     return table
 
 
-def build_integration_table(state: dict[str, Any]) -> Table:
+def build_integration_table(state: Dict[str, Any]) -> Table:
     table = Table(
         title="Connectors",
         box=box.SIMPLE,
@@ -507,7 +520,7 @@ def build_integration_table(state: dict[str, Any]) -> Table:
     return table
 
 
-def build_backend_table(state: dict[str, Any]) -> Table:
+def build_backend_table(state: Dict[str, Any]) -> Table:
     table = Table(
         title="Backend Services",
         box=box.SIMPLE,
@@ -535,7 +548,7 @@ def build_backend_table(state: dict[str, Any]) -> Table:
     return table
 
 
-def build_database_table(state: dict[str, Any]) -> Table:
+def build_database_table(state: Dict[str, Any]) -> Table:
     table = Table(
         title="Databases",
         box=box.SIMPLE,
@@ -563,7 +576,7 @@ def build_database_table(state: dict[str, Any]) -> Table:
     return table
 
 
-def build_feedback_table(state: dict[str, Any]) -> Table:
+def build_feedback_table(state: Dict[str, Any]) -> Table:
     table = Table(
         title="Feedback & Surveys",
         box=box.SIMPLE,
@@ -588,7 +601,7 @@ def build_feedback_table(state: dict[str, Any]) -> Table:
     return table
 
 
-def build_analytics_panel(state: dict[str, Any]) -> Panel:
+def build_analytics_panel(state: Dict[str, Any]) -> Panel:
     analytics = state.get("analytics", {})
     benchmarks = state.get("benchmarks", {})
     
@@ -645,7 +658,7 @@ def build_analytics_panel(state: dict[str, Any]) -> Panel:
     )
 
 
-def build_actions_panel(state: dict[str, Any]) -> Panel:
+def build_actions_panel(state: Dict[str, Any]) -> Panel:
     actions = state.get("actions", [])
     if not actions:
         return Panel(
@@ -661,7 +674,7 @@ def build_actions_panel(state: dict[str, Any]) -> Panel:
     today = datetime.now().date()
     tomorrow = today + timedelta(days=1)
     
-    def parse_date(date_str: str) -> date | None:
+    def parse_date(date_str: str) -> datetime.date | None:
         try:
             return datetime.strptime(date_str, "%Y-%m-%d").date()
         except (ValueError, TypeError):
@@ -713,7 +726,7 @@ def build_quick_actions_menu() -> Text:
     return actions_text
 
 
-def export_status_cards(state: dict[str, Any], base_path: Path) -> None:
+def export_status_cards(state: Dict[str, Any], base_path: Path) -> None:
     """Export individual SVG panels for campaigns, analytics, etc."""
     base_path.parent.mkdir(parents=True, exist_ok=True)
     
@@ -749,7 +762,7 @@ def export_status_cards(state: dict[str, Any], base_path: Path) -> None:
     status_console.print(f"[green]✓[/green] Exported 4 status cards to {base_path.parent}/")
 
 
-def render_brief_mode(state: dict[str, Any], console: Console) -> None:
+def render_brief_mode(state: Dict[str, Any], console: Console) -> None:
     """Render a compact morning brief with Today's Focus and top 3 metrics."""
     profile = state.get("profile", {})
     business_name = profile.get("business_name", "B2B Dashboard")
@@ -806,7 +819,7 @@ def render_brief_mode(state: dict[str, Any], console: Console) -> None:
     console.print()
 
 
-def render_dashboard(state: dict[str, Any], console: Console, now: datetime | None = None) -> None:
+def render_dashboard(state: Dict[str, Any], console: Console, now: datetime | None = None) -> None:
     now = now or datetime.now()
     layout = Layout()
     layout.split_column(
@@ -882,7 +895,7 @@ def render_dashboard(state: dict[str, Any], console: Console, now: datetime | No
     console.print(layout)
 
 
-def apply_strategy_to_segment(args: argparse.Namespace, state: dict[str, Any]) -> None:
+def apply_strategy_to_segment(args: argparse.Namespace, state: Dict[str, Any]) -> None:
     """Auto-generate campaigns/actions from selected strategy for a segment."""
     strategy_name = args.select_strategy
     segment_name = args.segment
@@ -905,7 +918,7 @@ def apply_strategy_to_segment(args: argparse.Namespace, state: dict[str, Any]) -
         raise SystemExit(f"Segment '{segment_name}' not found. Available: {', '.join(seg.get('name', '') for seg in segments)}")
     
     # Generate campaigns based on strategy steps
-    campaigns: list[dict[str, Any]] = state.setdefault("campaigns", [])
+    campaigns: List[Dict[str, Any]] = state.setdefault("campaigns", [])
     channels = strategy.get("channels", ["Email"])
     steps = strategy.get("steps", [])
     
@@ -940,7 +953,7 @@ def apply_strategy_to_segment(args: argparse.Namespace, state: dict[str, Any]) -
     console.print(f"  Generated {1} campaign(s)")
 
 
-def generate_marketing_video(args: argparse.Namespace, state: dict[str, Any]) -> None:
+def generate_marketing_video(args: argparse.Namespace, state: Dict[str, Any]) -> None:
     """Generate video from template using MoviePy."""
     template_name = args.template
     output_path = args.output
@@ -988,7 +1001,7 @@ def generate_marketing_video(args: argparse.Namespace, state: dict[str, Any]) ->
                 txt_clip.close()
         
         # Add to state (update existing entry for the same output_path instead of duplicating)
-        videos: list[dict[str, Any]] = state.setdefault("videos", [])
+        videos: List[Dict[str, Any]] = state.setdefault("videos", [])
         output_path_str = str(output_path)
 
         # Check for existing video with the same output_path
@@ -1015,13 +1028,13 @@ def generate_marketing_video(args: argparse.Namespace, state: dict[str, Any]) ->
         console = themed_console()
         console.print(f"[green]✓[/green] Generated video from template '{template_name}' to '{output_path}'")
         
-    except ImportError as err:
-        raise SystemExit("MoviePy not installed. Install with: pip install moviepy") from err
-    except OSError as err:
-        raise SystemExit(f"Failed to generate video: {err}") from err
+    except ImportError:
+        raise SystemExit("MoviePy not installed. Install with: pip install moviepy")
+    except Exception as e:
+        raise SystemExit(f"Failed to generate video: {e}")
 
 
-def generate_auto_plan(creative_idea: str, automation_rules: dict[str, Any] | None = None) -> dict[str, Any]:
+def generate_auto_plan(creative_idea: str, automation_rules: Dict[str, Any] | None = None) -> Dict[str, Any]:
     """
     Match user's creative idea to automation rules and generate a plan.
     Uses keyword matching with scoring to determine which rule best applies.
@@ -1032,22 +1045,27 @@ def generate_auto_plan(creative_idea: str, automation_rules: dict[str, Any] | No
         automation_rules: Optional dict of automation rules. If not provided, loads from sample_state()
     
     Returns:
-        dict containing the matched rule and auto-configured plan
+        Dict containing the matched rule and auto-configured plan
     """
+    # Load the actual rules - use provided rules or load from sample state
+    if automation_rules is None:
+        state = sample_state()
+        automation_rules = state.get("automation_rules", {})
+    
     if not creative_idea or not creative_idea.strip():
         # Handle empty input gracefully
         creative_idea = "General campaign"
     
     idea_lower = creative_idea.lower()
     
-    # Define keyword patterns for each rule
-    # NOTE: These patterns are hardcoded and must be kept in sync with automation_rules
-    # in sample_state(). If you add/modify rules, update both locations.
-    rule_patterns = {
-        "SMB_CTO": ["smb", "cto", "tech lead", "technical", "small business", "medium business"],
-        "Enterprise": ["enterprise", "vp", "sales", "large", "corporation"],
-        "Demo_video": ["demo", "video", "presentation", "recording", "mp4"],
-    }
+    # Extract keyword patterns from automation rules
+    # This ensures patterns stay in sync with automation_rules automatically
+    rule_patterns = {}
+    for rule_name, rule_config in automation_rules.items():
+        keywords = rule_config.get("keywords")
+        if keywords:
+            rule_patterns[rule_name] = keywords
+        # Note: Rules without keywords will be skipped from pattern matching
     
     # Score each rule based on keyword matches
     scores = {}
@@ -1076,11 +1094,6 @@ def generate_auto_plan(creative_idea: str, automation_rules: dict[str, Any] | No
     
     if not matched_rule:
         return default_plan
-    
-    # Load the actual rules - use provided rules or load from sample state
-    if automation_rules is None:
-        state = sample_state()
-        automation_rules = state.get("automation_rules", {})
     
     rule_config = automation_rules.get(matched_rule, {})
     
@@ -1117,7 +1130,7 @@ def generate_auto_plan(creative_idea: str, automation_rules: dict[str, Any] | No
     return auto_plan
 
 
-def render_creative_studio(creative_idea: str, auto_plan: dict[str, Any], console: Console) -> None:
+def render_creative_studio(creative_idea: str, auto_plan: Dict[str, Any], console: Console) -> None:
     """
     Render the Creative Studio UI with a 70/30 split layout.
     Left (70%): Creation Studio for editing content
@@ -1211,7 +1224,7 @@ def render_creative_studio(creative_idea: str, auto_plan: dict[str, Any], consol
     console.print()
     console.print(layout)
     console.print()
-    console.print("[dim]The system has handled the dirty work (segments, scheduling, syncs) automatically.[/dim]")
+    console.print(f"[dim]The system has handled the dirty work (segments, scheduling, syncs) automatically.[/dim]")
     console.print(f"[{COLOR_ACCENT_GREEN}]Press Launch when ready to deploy your campaign![/{COLOR_ACCENT_GREEN}]")
 
 
@@ -1230,8 +1243,8 @@ def creative_mode(console: Console) -> None:
     render_creative_studio(creative_idea, auto_plan, console)
 
 
-def add_campaign(args: argparse.Namespace, state: dict[str, Any]) -> None:
-    campaigns: list[dict[str, Any]] = state.setdefault("campaigns", [])
+def add_campaign(args: argparse.Namespace, state: Dict[str, Any]) -> None:
+    campaigns: List[Dict[str, Any]] = state.setdefault("campaigns", [])
     campaigns.append(
         {
             "name": args.name,
@@ -1313,9 +1326,9 @@ def validate_next_send(next_send: str | None) -> str | None:
         return None
     try:
         datetime.strptime(next_send, "%Y-%m-%d")
-    except ValueError as err:
-        raise SystemExit("Invalid --next-send date. Use YYYY-MM-DD.") from err
-    return next_send
+        return next_send
+    except ValueError:
+        raise SystemExit("Invalid --next-send date. Use YYYY-MM-DD.")
 
 
 def should_render_dashboard(args: argparse.Namespace) -> bool:
