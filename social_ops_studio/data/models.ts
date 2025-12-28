@@ -60,6 +60,19 @@ export interface PlatformVariant {
   mediaIds: string[];
   hashtags: string[];
   scheduledFor: Date | null;
+  customThumbnailId?: string; // Platform-specific fidelity: custom thumbnail for video content
+  qualityPreservation?: 'high' | 'medium' | 'auto'; // Native quality preservation setting
+  firstComment?: string; // First-comment automation content
+  utmParameters?: UTMParameters; // Link management with UTM tracking
+}
+
+// UTM parameters for link tracking
+export interface UTMParameters {
+  source: string;
+  medium: string;
+  campaign?: string;
+  term?: string;
+  content?: string;
 }
 
 // Scheduled post entity
@@ -68,9 +81,19 @@ export interface ScheduledPost {
   accountId: string;
   postDraftId: string;
   scheduledFor: Date;
-  status: 'pending' | 'publishing' | 'published' | 'failed';
+  status: 'pending' | 'publishing' | 'published' | 'failed' | 'awaiting_mobile'; // Hybrid publishing mode
   errorMessage: string | null;
   publishedPostId: string | null;
+  idempotencyKey?: string; // Backend reliability: prevent duplicate posts
+  retryCount?: number; // Intelligent retry tracking
+  validationErrors?: ValidationError[]; // Platform-specific validation
+  requiresMobilePublish?: boolean; // Hybrid manual publishing flag
+}
+
+export interface ValidationError {
+  field: string;
+  message: string;
+  platform: Platform;
 }
 
 // Metric snapshot entity
@@ -217,4 +240,122 @@ export interface ExperimentVariant {
   configuration: Record<string, string>;
   postIds: string[];
   results: Record<string, number>;
+}
+
+// Content Pillar for strategic organization (Workflow Protection)
+export interface ContentPillar {
+  id: string;
+  name: string;
+  description: string;
+  category: 'educational' | 'promotional' | 'engagement' | 'inspirational' | 'custom';
+  color: string;
+  postIds: string[];
+  targetFrequency?: number; // posts per week
+}
+
+// Team Member and Role-Based Access Control (Team Governance)
+export interface TeamMember {
+  id: string;
+  email: string;
+  name: string;
+  role: TeamRole;
+  permissions: TeamPermission[];
+  invitedAt: Date;
+  status: 'pending' | 'active' | 'inactive';
+}
+
+export type TeamRole = 'admin' | 'editor' | 'viewer';
+
+export type TeamPermission = 
+  | 'create_posts'
+  | 'edit_posts'
+  | 'delete_posts'
+  | 'publish_posts'
+  | 'view_analytics'
+  | 'manage_team'
+  | 'manage_settings'
+  | 'approve_posts';
+
+// Approval Workflow (Team Governance)
+export interface ApprovalRequest {
+  id: string;
+  postDraftId: string;
+  requesterId: string;
+  reviewerId: string;
+  status: 'pending' | 'approved' | 'rejected' | 'changes_requested';
+  comments: ApprovalComment[];
+  createdAt: Date;
+  resolvedAt: Date | null;
+}
+
+export interface ApprovalComment {
+  id: string;
+  authorId: string;
+  content: string;
+  createdAt: Date;
+}
+
+// Link Management (Smart Automation)
+export interface ShortLink {
+  id: string;
+  originalUrl: string;
+  shortCode: string;
+  postDraftId: string | null;
+  utmParameters: UTMParameters;
+  clickCount: number;
+  createdAt: Date;
+  lastClickedAt: Date | null;
+}
+
+// AI Tone Analysis Result (Ethical AI Integration)
+export interface ToneAnalysisResult {
+  postDraftId: string;
+  detectedTone: string;
+  confidence: number;
+  brandAlignment: 'aligned' | 'misaligned' | 'neutral';
+  suggestions: string[];
+  analyzedAt: Date;
+}
+
+// AI Content Source Verification (Ethical AI Integration)
+export interface AIContentSource {
+  postDraftId: string;
+  sourceUrls: string[];
+  factChecks: FactCheck[];
+  generatedSections: GeneratedSection[];
+  verifiedAt: Date | null;
+}
+
+export interface FactCheck {
+  claim: string;
+  sourceUrl: string;
+  verified: boolean;
+  verifiedBy?: string;
+  verifiedAt?: Date;
+}
+
+export interface GeneratedSection {
+  content: string;
+  startIndex: number;
+  endIndex: number;
+  sources: string[];
+}
+
+// Evergreen Content (Smart Automation)
+export interface EvergreenContent {
+  postDraftId: string;
+  isEvergreen: boolean;
+  recycleFrequency: number; // days between reposts
+  lastRecycledAt: Date | null;
+  nextRecycleAt: Date | null;
+  recycleCount: number;
+  performanceThreshold: number; // engagement rate threshold
+}
+
+// Autosave State (Workflow Protection)
+export interface AutosaveState {
+  postDraftId: string;
+  content: Partial<PostDraft>;
+  savedAt: Date;
+  version: number;
 }
