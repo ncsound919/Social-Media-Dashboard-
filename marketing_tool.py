@@ -291,7 +291,7 @@ def load_state() -> dict[str, Any]:
             return json.load(handle)
     except json.JSONDecodeError:
         console = themed_console()
-        console.print(f"[warning]⚠ State file corrupted, resetting to sample data[/warning]")
+        console.print("[warning]⚠ State file corrupted, resetting to sample data[/warning]")
         return reset_state()
 
 
@@ -1032,7 +1032,7 @@ def generate_auto_plan(creative_idea: str, automation_rules: dict[str, Any] | No
         automation_rules: Optional dict of automation rules. If not provided, loads from sample_state()
     
     Returns:
-        Dict containing the matched rule and auto-configured plan
+        dict containing the matched rule and auto-configured plan
     """
     if not creative_idea or not creative_idea.strip():
         # Handle empty input gracefully
