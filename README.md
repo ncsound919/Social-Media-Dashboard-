@@ -51,20 +51,25 @@ python marketing_tool.py --add-campaign \
 ```
    Optional: set an initial status with `--status ready|running|paused` (defaults to `scheduled`).
 5. Export a snapshot of the dashboard (SVG) to share or pin for your morning routine:
+
    ```bash
    python marketing_tool.py --snapshot
    ```
+
    The snapshot is saved to `docs/dashboard_snapshot.svg` with your business name as a watermark.
 
-5. Get a quick morning brief with today's focus and top 3 metrics:
+6. Get a quick morning brief with today's focus and top 3 metrics:
+
    ```bash
    python marketing_tool.py --brief
    ```
 
-6. Export individual status cards for sharing in Slack/Teams:
+7. Export individual status cards for sharing in Slack/Teams:
+
    ```bash
    python marketing_tool.py --export-cards
    ```
+
    Cards are saved to `docs/card_*.svg` with timestamps.
 
 If you want to restore the original sample data at any time:
