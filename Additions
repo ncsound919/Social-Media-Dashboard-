@@ -1,0 +1,35 @@
+
+
+### 1. Platform-Specific Fidelity and Hybrid Publishing
+A major point of failure in current tools is the "one-size-fits-all" approach to API limitations. To avoid overwhelming the user with errors, the tool must handle platform nuances intelligently.
+*   **Granular Video Metadata:** The tool must allow users to select specific **thumbnails** for YouTube Shorts and Instagram Reels, as generic auto-selection often ruins click-through rates [1, 2].
+*   **Native Quality Preservation:** The tool must ensure video resolution is not aggressively downscaled during API upload, a common issue that makes content look "grainy and gross" on platforms like TikTok [3].
+*   **Hybrid "Manual" Publishing Mode:** Because APIs often lack features (like trending audio or specific stickers), the tool must include a **mobile companion app sync**. This allows users to schedule content on desktop but receive a "push to mobile" notification with the media and caption ready to paste for manual publishing, ensuring access to native app features [4-6].
+
+### 2. Workflow Protection and "Sanity" Features
+To prevent the user from feeling overwhelmed by data loss or clutter, specific safeguards are necessary.
+*   **Aggressive Autosave:** To combat browser refreshes or app crashes, the tool must implement robust autosaving so drafts are never lost, a distinct advantage over native platform interfaces [7].
+*   **Content Pillars and Ideation:** Instead of a blank slate, the AI module should organize ideas into **content pillars** (e.g., educational, promotional) to provide structure for strategic planning rather than just random generation [8].
+*   **Focused "Drafting" Mode:** To prevent users from getting "sucked in" to social media feeds while trying to work, the interface should provide a clean writing environment separate from the analytics and feed streams [7].
+
+### 3. Smart Automation (Beyond Simple Scheduling)
+Automation should focus on driving engagement and traffic without requiring constant user intervention.
+*   **First-Comment Automation:** The tool should support "auto-plug" features, automatically posting a first comment with links or calls to action immediately after the main post goes live, a tactic essential for platforms like LinkedIn and X (Twitter) [9].
+*   **Evergreen Recycling:** A feature to tag specific posts as "evergreen" for **smart recycling**, allowing the system to re-queue timeless content automatically to fill gaps in the schedule [10, 11].
+*   **Link Management:** An integrated URL shortener that automatically appends **UTM parameters** to links, ensuring that traffic sources are tracked without the user manually tagging every URL [12, 13].
+
+### 4. Backend Reliability and Error Handling
+To ensure the user trusts the tool, the backend must handle the inherent instability of distributed networks without exposing the user to constant failure messages.
+*   **Idempotency Keys:** To prevent embarrassing duplicate posts (e.g., posting the same tweet twice because the internet stuttered), the system must use **idempotency keys** (unique identifiers for each request) to ensure that a retried network request does not result in a duplicate action [14, 15].
+*   **Intelligent Retry Logic:** The system must distinguish between **transient failures** (e.g., a network timeout) which should trigger an automatic retry, and **permanent failures** (e.g., an expired authentication token) which require user intervention [16, 17].
+*   **Platform-Specific Validation:** The tool must validate content against platform rules (e.g., character limits, image aspect ratios) *before* attempting to upload, preventing failed posts [18].
+
+### 5. Ethical and Safe AI Integration
+To ensure the tool remains helpful rather than a liability, AI integration requires constraints.
+*   **Tone Analysis:** Beyond checking grammar, the AI should detect if a post's tone matches the brand's voice (e.g., professional vs. humorous) to prevent brand misalignment [19, 20].
+*   **Verification Mechanisms:** If the AI generates facts or summarizes articles for posts, the tool needs a mechanism to allow the user to easily verify the source material, as AI models can hallucinate information [21].
+
+### 6. Team Governance (Without Bureaucracy)
+For teams, the tool needs structure that doesn't slow down creativity.
+*   **Granular Roles:** Implementation of distinct roles (Admin, Editor, Viewer) to prevent accidental deletions or unauthorized posts [22, 23].
+*   **Approval Workflows:** A system where drafts can be submitted for review, allowing managers to approve content or leave comments before it enters the publishing queue [22, 24].
