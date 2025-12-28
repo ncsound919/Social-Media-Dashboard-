@@ -14,3 +14,5 @@ export * from './tone-analysis-service';
 export * from './team-collaboration-service';
 export * from './evergreen-content-service';
 export * from './content-pillar-service';
+export * from './ai-content-verification-service';
+export * from './mobile-sync-service';
