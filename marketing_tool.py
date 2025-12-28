@@ -661,7 +661,7 @@ def build_actions_panel(state: dict[str, Any]) -> Panel:
     today = datetime.now().date()
     tomorrow = today + timedelta(days=1)
     
-    def parse_date(date_str: str) -> datetime.date | None:
+    def parse_date(date_str: str) -> date | None:
         try:
             return datetime.strptime(date_str, "%Y-%m-%d").date()
         except (ValueError, TypeError):
