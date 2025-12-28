@@ -296,20 +296,20 @@
   "data_model_simplified": {
     "entities": {
       "Account": {
-        "fields": ["id", "platform", "handle", "display_name", "avatar_path", "connected_at", "last_sync_at", "settings_json"]
+        "fields": ["id", "platform", "handle", "display_name", "avatar_path", "connected_at", "last_sync_at", "settings"]
       },
       "PostDraft": {
-        "fields": ["id", "title", "body_rich", "platform_variants_json", "tags", "status", "created_at", "updated_at"]
+        "fields": ["id", "title", "body_rich", "platform_variants", "tags", "status", "created_at", "updated_at"]
       },
       "ScheduledPost": {
         "fields": ["id", "account_id", "post_draft_id", "scheduled_for", "status", "error_message", "published_post_id"]
       },
       "MetricSnapshot": {
-        "fields": ["id", "account_id", "captured_at", "metrics_json", "source"],
+        "fields": ["id", "account_id", "captured_at", "metrics", "source"],
         "description": "Time-series snapshots of account metrics for local analytics."
       },
       "Rule": {
-        "fields": ["id", "name", "trigger_type", "conditions_json", "actions_json", "enabled"]
+        "fields": ["id", "name", "trigger_type", "conditions", "actions", "enabled"]
       }
     }
   },
