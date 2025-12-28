@@ -19,6 +19,17 @@ Desktop-style command center for enhancing B2B customer engagement through autom
 - **Shareable Status Cards**: Export individual SVG panels for Slack/Teams sharing.
 - **Branded Watermarks**: Auto-added business name and date to all SVG exports for professional sharing.
 
+### NEW: Leading Platform Features
+
+The dashboard now includes best-in-class features inspired by leading social media management tools:
+
+- **Hootsuite Pro**: Bulk scheduling, social listening, advanced analytics, and approval workflows
+- **Buffer Studio**: Content preview, link-in-bio tool, AI content assistant, and simple analytics
+- **Loomly Creative**: Content optimization tips, visual calendars, brand asset library, and team approval processes
+- **Metricool Analytics**: Unified analytics dashboard, competitor analysis, automated reporting, and ad performance tracking
+
+See [PLATFORM_FEATURES.md](PLATFORM_FEATURES.md) for detailed documentation on all platform features.
+
 ## Quick start
 
 1. Create a virtual environment (optional) and install dependencies:
