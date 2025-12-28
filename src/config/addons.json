@@ -132,6 +132,259 @@
           "metrics": ["ctr", "save_rate", "share_rate", "comment_depth"]
         }
       ]
+    },
+
+    "hootsuite_pro": {
+      "id": "hootsuite_pro",
+      "label": "Hootsuite Pro",
+      "navigation_group": "Analytics",
+      "dashboard_cards": [
+        {
+          "id": "bulk_scheduler",
+          "type": "bulk_upload_panel",
+          "title": "Bulk Scheduler",
+          "description": "Schedule hundreds of posts at once across multiple platforms.",
+          "supported_formats": ["csv", "excel"],
+          "fields": [
+            "platform",
+            "content",
+            "scheduled_time",
+            "media_urls",
+            "hashtags"
+          ]
+        },
+        {
+          "id": "social_listening",
+          "type": "listening_dashboard",
+          "title": "Social Listening",
+          "description": "Monitor brand mentions, sentiment, and trending topics in real-time.",
+          "metrics": [
+            "total_mentions",
+            "sentiment_score",
+            "trending_topics",
+            "competitor_mentions"
+          ],
+          "time_range_default": "last_7_days"
+        },
+        {
+          "id": "advanced_analytics",
+          "type": "analytics_panel",
+          "title": "Advanced Analytics",
+          "description": "Track performance, competitors, and ROI across all platforms.",
+          "metrics": [
+            "engagement_rate",
+            "reach",
+            "impressions",
+            "roi",
+            "competitor_benchmark"
+          ],
+          "time_range_default": "last_30_days"
+        },
+        {
+          "id": "approval_workflows",
+          "type": "approval_board",
+          "title": "Approval Workflows",
+          "description": "Team collaboration with approval processes and shared calendars.",
+          "columns": [
+            "draft",
+            "pending_review",
+            "approved",
+            "rejected",
+            "scheduled"
+          ],
+          "permissions": ["admin", "editor", "viewer"]
+        }
+      ]
+    },
+
+    "buffer_studio": {
+      "id": "buffer_studio",
+      "label": "Buffer Studio",
+      "navigation_group": "Publishing",
+      "dashboard_cards": [
+        {
+          "id": "content_preview",
+          "type": "preview_panel",
+          "title": "Content Preview",
+          "description": "Preview how posts will appear on each platform before publishing.",
+          "platforms": [
+            "instagram",
+            "facebook",
+            "twitter",
+            "linkedin",
+            "tiktok",
+            "pinterest"
+          ]
+        },
+        {
+          "id": "link_in_bio",
+          "type": "link_manager",
+          "title": "Link in Bio Tool",
+          "description": "Create and manage landing pages for social media bio links.",
+          "fields": [
+            "page_title",
+            "links",
+            "theme",
+            "analytics_enabled"
+          ]
+        },
+        {
+          "id": "ai_content_assistant",
+          "type": "ai_suggestion_panel",
+          "title": "AI Content Assistant",
+          "description": "Get AI-powered content suggestions and enhancement recommendations.",
+          "features": [
+            "caption_generation",
+            "hashtag_suggestions",
+            "post_optimization",
+            "tone_adjustment"
+          ]
+        },
+        {
+          "id": "simple_analytics",
+          "type": "metric_grid",
+          "title": "Simple Analytics",
+          "description": "Clean, actionable analytics dashboards for measuring engagement.",
+          "metrics": [
+            "total_posts",
+            "total_engagement",
+            "avg_engagement_rate",
+            "top_performing_post"
+          ],
+          "time_range_default": "last_30_days"
+        }
+      ]
+    },
+
+    "loomly_creative": {
+      "id": "loomly_creative",
+      "label": "Loomly Creative",
+      "navigation_group": "Content",
+      "dashboard_cards": [
+        {
+          "id": "content_optimization",
+          "type": "optimization_panel",
+          "title": "Content Optimization Tips",
+          "description": "Get real-time suggestions to improve your content before publishing.",
+          "tip_categories": [
+            "character_count",
+            "hashtag_usage",
+            "best_posting_time",
+            "image_dimensions",
+            "readability_score"
+          ]
+        },
+        {
+          "id": "visual_calendar",
+          "type": "calendar_view",
+          "title": "Visual Content Calendar",
+          "description": "Shared calendar with drag-and-drop planning capabilities.",
+          "views": ["month", "week", "day"],
+          "filters": ["platform", "campaign", "status", "team_member"]
+        },
+        {
+          "id": "brand_asset_library",
+          "type": "library",
+          "title": "Brand Asset Library",
+          "description": "Central repository for logos, images, videos, and templates.",
+          "item_types": ["logo", "image", "video", "template", "font", "color_palette"],
+          "tags_enabled": true,
+          "actions": ["download", "add_to_post", "share", "archive"]
+        },
+        {
+          "id": "team_approval_process",
+          "type": "approval_board",
+          "title": "Team Approval Process",
+          "description": "Built-in workflows for content review and approval with commenting.",
+          "columns": [
+            "needs_review",
+            "in_review",
+            "changes_requested",
+            "approved",
+            "published"
+          ],
+          "permissions": ["creator", "reviewer", "approver", "admin"]
+        }
+      ]
+    },
+
+    "metricool_analytics": {
+      "id": "metricool_analytics",
+      "label": "Metricool Analytics",
+      "navigation_group": "Analytics",
+      "dashboard_cards": [
+        {
+          "id": "unified_analytics",
+          "type": "unified_dashboard",
+          "title": "Unified Analytics Dashboard",
+          "description": "All platform analytics in one centralized view with website integration.",
+          "platforms": [
+            "facebook",
+            "instagram",
+            "twitter",
+            "linkedin",
+            "tiktok",
+            "youtube",
+            "pinterest",
+            "google_business"
+          ],
+          "metrics": [
+            "total_followers",
+            "total_engagement",
+            "post_reach",
+            "website_traffic",
+            "conversion_rate"
+          ],
+          "time_range_default": "last_30_days"
+        },
+        {
+          "id": "competitor_analysis",
+          "type": "competitor_tracker",
+          "title": "Competitor Analysis",
+          "description": "Monitor competitors' activities and track hashtag performance.",
+          "features": [
+            "competitor_profiles",
+            "hashtag_tracking",
+            "content_comparison",
+            "growth_trends"
+          ]
+        },
+        {
+          "id": "automated_reporting",
+          "type": "report_generator",
+          "title": "Automated Reporting",
+          "description": "Create and schedule custom reports for campaigns and performance.",
+          "report_types": [
+            "daily_summary",
+            "weekly_performance",
+            "monthly_overview",
+            "campaign_report",
+            "custom"
+          ],
+          "export_formats": ["pdf", "excel", "powerpoint"]
+        },
+        {
+          "id": "ad_performance",
+          "type": "ad_tracker",
+          "title": "Ad Performance Tracking",
+          "description": "Track and analyze paid advertising performance across networks.",
+          "platforms": [
+            "facebook_ads",
+            "instagram_ads",
+            "twitter_ads",
+            "linkedin_ads",
+            "google_ads"
+          ],
+          "metrics": [
+            "ad_spend",
+            "impressions",
+            "clicks",
+            "conversions",
+            "cost_per_click",
+            "roi"
+          ]
+        }
+      ]
     }
   }
 }

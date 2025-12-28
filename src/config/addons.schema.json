@@ -44,7 +44,20 @@
               { "$ref": "#/definitions/AutomationPanelCard" },
               { "$ref": "#/definitions/BriefGeneratorCard" },
               { "$ref": "#/definitions/TimelineBoardCard" },
-              { "$ref": "#/definitions/ExperimentMatrixCard" }
+              { "$ref": "#/definitions/ExperimentMatrixCard" },
+              { "$ref": "#/definitions/BulkUploadPanelCard" },
+              { "$ref": "#/definitions/ListeningDashboardCard" },
+              { "$ref": "#/definitions/AnalyticsPanelCard" },
+              { "$ref": "#/definitions/ApprovalBoardCard" },
+              { "$ref": "#/definitions/PreviewPanelCard" },
+              { "$ref": "#/definitions/LinkManagerCard" },
+              { "$ref": "#/definitions/AISuggestionPanelCard" },
+              { "$ref": "#/definitions/OptimizationPanelCard" },
+              { "$ref": "#/definitions/CalendarViewCard" },
+              { "$ref": "#/definitions/UnifiedDashboardCard" },
+              { "$ref": "#/definitions/CompetitorTrackerCard" },
+              { "$ref": "#/definitions/ReportGeneratorCard" },
+              { "$ref": "#/definitions/AdTrackerCard" }
             ]
           }
         }
@@ -238,6 +251,246 @@
         "metrics": {
           "type": "array",
           "description": "Metrics to track for experiments",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "BulkUploadPanelCard": {
+      "type": "object",
+      "required": ["id", "type", "title", "supported_formats", "fields"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "bulk_upload_panel" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "supported_formats": {
+          "type": "array",
+          "description": "File formats supported for bulk upload",
+          "items": { "type": "string" }
+        },
+        "fields": {
+          "type": "array",
+          "description": "Required fields for bulk upload",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "ListeningDashboardCard": {
+      "type": "object",
+      "required": ["id", "type", "title", "metrics", "time_range_default"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "listening_dashboard" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "metrics": {
+          "type": "array",
+          "description": "Listening metrics to display",
+          "items": { "type": "string" }
+        },
+        "time_range_default": {
+          "type": "string",
+          "description": "Default time range for metrics",
+          "enum": ["last_7_days", "last_30_days", "last_90_days", "custom"]
+        }
+      }
+    },
+    "AnalyticsPanelCard": {
+      "type": "object",
+      "required": ["id", "type", "title", "metrics", "time_range_default"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "analytics_panel" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "metrics": {
+          "type": "array",
+          "description": "Analytics metrics to track",
+          "items": { "type": "string" }
+        },
+        "time_range_default": {
+          "type": "string",
+          "description": "Default time range for analytics",
+          "enum": ["last_7_days", "last_30_days", "last_90_days", "custom"]
+        }
+      }
+    },
+    "ApprovalBoardCard": {
+      "type": "object",
+      "required": ["id", "type", "title", "columns", "permissions"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "approval_board" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "columns": {
+          "type": "array",
+          "description": "Approval workflow stages",
+          "items": { "type": "string" }
+        },
+        "permissions": {
+          "type": "array",
+          "description": "User permission levels",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "PreviewPanelCard": {
+      "type": "object",
+      "required": ["id", "type", "title", "platforms"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "preview_panel" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "platforms": {
+          "type": "array",
+          "description": "Platforms to preview content for",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "LinkManagerCard": {
+      "type": "object",
+      "required": ["id", "type", "title", "fields"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "link_manager" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "fields": {
+          "type": "array",
+          "description": "Fields for link management",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "AISuggestionPanelCard": {
+      "type": "object",
+      "required": ["id", "type", "title", "features"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "ai_suggestion_panel" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "features": {
+          "type": "array",
+          "description": "AI features available",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "OptimizationPanelCard": {
+      "type": "object",
+      "required": ["id", "type", "title", "tip_categories"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "optimization_panel" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "tip_categories": {
+          "type": "array",
+          "description": "Categories of optimization tips",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "CalendarViewCard": {
+      "type": "object",
+      "required": ["id", "type", "title", "views", "filters"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "calendar_view" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "views": {
+          "type": "array",
+          "description": "Available calendar views",
+          "items": { "type": "string" }
+        },
+        "filters": {
+          "type": "array",
+          "description": "Filters for calendar content",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "UnifiedDashboardCard": {
+      "type": "object",
+      "required": ["id", "type", "title", "platforms", "metrics", "time_range_default"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "unified_dashboard" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "platforms": {
+          "type": "array",
+          "description": "Platforms included in unified view",
+          "items": { "type": "string" }
+        },
+        "metrics": {
+          "type": "array",
+          "description": "Unified metrics to display",
+          "items": { "type": "string" }
+        },
+        "time_range_default": {
+          "type": "string",
+          "description": "Default time range for unified analytics",
+          "enum": ["last_7_days", "last_30_days", "last_90_days", "custom"]
+        }
+      }
+    },
+    "CompetitorTrackerCard": {
+      "type": "object",
+      "required": ["id", "type", "title", "features"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "competitor_tracker" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "features": {
+          "type": "array",
+          "description": "Competitor tracking features",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "ReportGeneratorCard": {
+      "type": "object",
+      "required": ["id", "type", "title", "report_types", "export_formats"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "report_generator" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "report_types": {
+          "type": "array",
+          "description": "Available report types",
+          "items": { "type": "string" }
+        },
+        "export_formats": {
+          "type": "array",
+          "description": "Supported export formats",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "AdTrackerCard": {
+      "type": "object",
+      "required": ["id", "type", "title", "platforms", "metrics"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "ad_tracker" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "platforms": {
+          "type": "array",
+          "description": "Ad platforms to track",
+          "items": { "type": "string" }
+        },
+        "metrics": {
+          "type": "array",
+          "description": "Ad metrics to monitor",
           "items": { "type": "string" }
         }
       }
