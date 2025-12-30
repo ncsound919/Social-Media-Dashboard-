@@ -111,14 +111,14 @@ export class PublishingReliability {
    * Calculate delay before next retry using exponential backoff
    */
   calculateRetryDelay(retryCount: number): number {
-    const delay = Math.min(
+    const baseDelay = Math.min(
       this.retryConfig.initialDelay * Math.pow(this.retryConfig.backoffMultiplier, retryCount),
       this.retryConfig.maxDelay
     );
     
-    // Add jitter to prevent thundering herd
-    const jitter = Math.random() * 0.1 * delay;
-    return Math.floor(delay + jitter);
+    // Add jitter to prevent thundering herd, but cap at maxDelay
+    const jitter = Math.random() * 0.1 * baseDelay;
+    return Math.floor(Math.min(baseDelay + jitter, this.retryConfig.maxDelay));
   }
 
   /**

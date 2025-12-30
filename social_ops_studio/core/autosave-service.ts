@@ -100,11 +100,16 @@ export class AutosaveService {
     const states = this.getAllStates();
     const existingStates = states.filter(s => s.postDraftId === draft.id);
     
+    // Calculate next version from max existing version (not from count)
+    const maxVersion = existingStates.length > 0
+      ? Math.max(...existingStates.map(s => s.version))
+      : 0;
+    
     const newState: AutosaveState = {
       postDraftId: draft.id,
       content: this.extractChanges(draft),
       savedAt: new Date(),
-      version: existingStates.length + 1,
+      version: maxVersion + 1,
     };
 
     // Add new state

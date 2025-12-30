@@ -207,10 +207,11 @@ export class MobileSyncService {
     
     // Unicode-aware truncation to 100 characters
     const truncatedCaption = this.truncateUnicodeSafe(notification.caption, 100);
+    const wasTruncated = Array.from(notification.caption).length > 100;
     
     return {
       title: `Time to publish on ${notification.platform}`,
-      body: `${truncatedCaption}... - Publishing in ${timeUntil}`,
+      body: `${truncatedCaption}${wasTruncated ? '...' : ''} - Publishing in ${timeUntil}`,
       data: {
         notificationId: notification.id,
         postDraftId: notification.postDraftId,
