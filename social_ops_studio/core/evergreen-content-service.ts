@@ -117,6 +117,7 @@ export class EvergreenContentService {
   getPostsReadyForRecycle(): EvergreenContent[] {
     const allContent = this.getAllEvergreenContent();
     const now = new Date();
+    const nowTime = now.getTime();
     
     return allContent.filter(evergreen => {
       if (!evergreen.isEvergreen) return false;
@@ -128,7 +129,7 @@ export class EvergreenContentService {
       
       // Check if it's time to recycle
       if (!evergreen.nextRecycleAt) return false;
-      return now >= new Date(evergreen.nextRecycleAt);
+      return new Date(evergreen.nextRecycleAt).getTime() <= nowTime;
     });
   }
 
