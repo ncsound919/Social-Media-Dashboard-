@@ -210,12 +210,12 @@ export class MobileSyncService {
    * Truncate text safely at character boundaries (Unicode-aware)
    */
   private truncateUnicodeSafe(text: string, maxLength: number): string {
-    if (text.length <= maxLength) return text;
-    
     // Use Array.from to handle multi-byte characters correctly
     const chars = Array.from(text);
-    if (chars.length <= maxLength) return text;
-    
+
+    if (chars.length <= maxLength) {
+      return text;
+    }
     return chars.slice(0, maxLength).join('');
   }
 
