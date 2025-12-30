@@ -263,11 +263,6 @@ export class MobileSyncService {
     const devices = this.getAllDevices().filter(d => d.isActive);
     const payload = this.getNotificationPayload(notification);
 
-    // Log for debugging in non-production environments
-    if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production') {
-      console.log('Sending push notification to', devices.length, 'devices:', payload);
-    }
-    
     // In a real implementation:
     // - Use Firebase Cloud Messaging (FCM) for Android
     // - Use Apple Push Notification service (APNs) for iOS
