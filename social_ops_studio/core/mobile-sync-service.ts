@@ -29,9 +29,23 @@ export interface MobileDevice {
   isActive: boolean;
 }
 
+export interface MobileSyncConfig {
+  // Platforms that require mobile publishing for certain features
+  mobileRequiredPlatforms: Platform[];
+}
+
+const defaultMobileSyncConfig: MobileSyncConfig = {
+  mobileRequiredPlatforms: ['tiktok', 'instagram_business', 'threads'],
+};
+
 export class MobileSyncService {
   private readonly notificationsKey = 'mobile_sync_notifications';
   private readonly devicesKey = 'mobile_devices';
+  private readonly config: MobileSyncConfig;
+
+  constructor(config?: Partial<MobileSyncConfig>) {
+    this.config = { ...defaultMobileSyncConfig, ...config };
+  }
 
   /**
    * Register a mobile device
@@ -224,7 +238,7 @@ export class MobileSyncService {
    */
   shouldUseMobilePublishing(platform: Platform): boolean {
     // Platforms where native mobile features are critical
-    return ['tiktok', 'instagram_business', 'threads'].includes(platform);
+    return this.config.mobileRequiredPlatforms.includes(platform);
   }
 
   /**
@@ -294,7 +308,15 @@ export class MobileSyncService {
    */
   private saveAllDevices(devices: MobileDevice[]): void {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(this.devicesKey, JSON.stringify(devices));
+    try {
+      localStorage.setItem(this.devicesKey, JSON.stringify(devices));
+    } catch (error) {
+      if (error instanceof Error && error.name === 'QuotaExceededError') {
+        console.error('Failed to save mobile devices: Storage quota exceeded');
+        throw new Error('Storage quota exceeded. Please free up space and try again.');
+      }
+      throw error;
+    }
   }
 
   /**
@@ -325,6 +347,14 @@ export class MobileSyncService {
    */
   private saveAllNotifications(notifications: MobileSyncNotification[]): void {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(this.notificationsKey, JSON.stringify(notifications));
+    try {
+      localStorage.setItem(this.notificationsKey, JSON.stringify(notifications));
+    } catch (error) {
+      if (error instanceof Error && error.name === 'QuotaExceededError') {
+        console.error('Failed to save notifications: Storage quota exceeded');
+        throw new Error('Storage quota exceeded. Please free up space and try again.');
+      }
+      throw error;
+    }
   }
 }

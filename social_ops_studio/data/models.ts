@@ -81,7 +81,15 @@ export interface ScheduledPost {
   accountId: string;
   postDraftId: string;
   scheduledFor: Date;
-  status: 'pending' | 'publishing' | 'published' | 'failed' | 'awaiting_mobile'; // Hybrid publishing mode
+  /**
+   * Status of the scheduled post:
+   * - 'pending': Waiting to be published at scheduled time
+   * - 'publishing': Currently being published to the platform
+   * - 'published': Successfully published to the platform
+   * - 'failed': Publishing failed (may be retried based on error type)
+   * - 'awaiting_mobile': Requires mobile app to complete publishing (e.g., for TikTok, Instagram Stories)
+   */
+  status: 'pending' | 'publishing' | 'published' | 'failed' | 'awaiting_mobile';
   errorMessage: string | null;
   publishedPostId: string | null;
   idempotencyKey?: string; // Backend reliability: prevent duplicate posts

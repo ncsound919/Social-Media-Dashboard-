@@ -205,7 +205,15 @@ export class AutosaveService {
    */
   private saveAllStates(states: AutosaveState[]): void {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(this.storageKey, JSON.stringify(states));
+    try {
+      localStorage.setItem(this.storageKey, JSON.stringify(states));
+    } catch (error) {
+      if (error instanceof Error && error.name === 'QuotaExceededError') {
+        console.error('Failed to save autosave states: Storage quota exceeded');
+        throw new Error('Storage quota exceeded. Please free up space and try again.');
+      }
+      throw error;
+    }
   }
 
   /**

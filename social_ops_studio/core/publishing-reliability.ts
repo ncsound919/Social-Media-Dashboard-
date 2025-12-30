@@ -132,6 +132,11 @@ export class PublishingReliability {
     let lastError: Error | null = null;
     let retryCount = scheduledPost.retryCount || 0;
 
+    // If this post has already reached or exceeded the maximum retries, fail fast
+    if (retryCount >= this.retryConfig.maxRetries) {
+      throw new Error('Max retries exceeded');
+    }
+
     while (retryCount < this.retryConfig.maxRetries) {
       try {
         return await fn();
