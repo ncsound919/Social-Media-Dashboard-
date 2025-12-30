@@ -110,16 +110,27 @@ export class AutosaveService {
     // Add new state
     states.push(newState);
 
-    // Keep only the latest maxVersions states per draft
-    const draftStates = states.filter(s => s.postDraftId === draft.id);
-    if (draftStates.length > this.config.maxVersions) {
-      const toRemove = draftStates.length - this.config.maxVersions;
-      const removeStates = draftStates.slice(0, toRemove);
-      const filteredStates = states.filter(s => !removeStates.includes(s));
-      this.saveAllStates(filteredStates);
-    } else {
-      this.saveAllStates(states);
+    // Keep only the latest maxVersions states per draft in a single pass
+    let keptForDraft = 0;
+    const filteredStates: AutosaveState[] = [];
+
+    // Traverse from newest to oldest so we keep the most recent versions
+    for (let i = states.length - 1; i >= 0; i--) {
+      const state = states[i];
+
+      if (state.postDraftId === draft.id) {
+        if (keptForDraft < this.config.maxVersions) {
+          keptForDraft++;
+          filteredStates.push(state);
+        }
+      } else {
+        filteredStates.push(state);
+      }
     }
+
+    // Reverse to restore original chronological order
+    filteredStates.reverse();
+    this.saveAllStates(filteredStates);
   }
 
   /**
