@@ -151,10 +151,16 @@ export class ContentPillarService {
   suggestPillar(draft: PostDraft): ContentPillar | null {
     const pillars = this.getAllPillars();
     const text = (draft.bodyRich + ' ' + draft.title).toLowerCase();
+    
+    // Common stop words to filter out
+    const stopWords = new Set(['and', 'the', 'for', 'to', 'a', 'an', 'of', 'in', 'on', 'is', 'it', 'at', 'by', 'or', 'be', 'this', 'that', 'with', 'from']);
 
     // Simple keyword-based matching
     for (const pillar of pillars) {
-      const keywords = pillar.description.toLowerCase().split(' ');
+      const keywords = pillar.description
+        .toLowerCase()
+        .split(/\s+/)
+        .filter(keyword => keyword.length > 2 && !stopWords.has(keyword));
       const matches = keywords.filter(keyword => text.includes(keyword));
 
       if (matches.length >= 2) {

@@ -55,6 +55,25 @@ export class MobileSyncService {
     deviceName: string,
     platform: 'ios' | 'android'
   ): MobileDevice {
+    const devices = this.getAllDevices();
+    
+    // Check if device already exists by token
+    const existingIndex = devices.findIndex(d => d.deviceToken === deviceToken);
+    
+    if (existingIndex >= 0) {
+      // Update existing device, preserving ID
+      devices[existingIndex] = {
+        ...devices[existingIndex],
+        deviceName,
+        platform,
+        lastSyncAt: new Date(),
+        isActive: true,
+      };
+      this.saveAllDevices(devices);
+      return devices[existingIndex];
+    }
+    
+    // Create new device
     const device: MobileDevice = {
       id: uuidv4(),
       deviceToken,
@@ -64,16 +83,7 @@ export class MobileSyncService {
       isActive: true,
     };
 
-    const devices = this.getAllDevices();
-    
-    // Check if device already exists
-    const existingIndex = devices.findIndex(d => d.deviceToken === deviceToken);
-    if (existingIndex >= 0) {
-      devices[existingIndex] = device;
-    } else {
-      devices.push(device);
-    }
-
+    devices.push(device);
     this.saveAllDevices(devices);
     return device;
   }

@@ -155,6 +155,11 @@ export class PlatformValidator {
       }
     }
 
+    // TODO: Add validation for supportedMediaTypes - check mediaFiles against rules.supportedMediaTypes
+    // TODO: Add validation for maxVideoLength - check video duration against rules.maxVideoLength
+    // TODO: Add validation for maxVideoSize - check video file size against rules.maxVideoSize
+    // TODO: Add validation for aspectRatios - check media aspect ratios against rules.aspectRatios
+
     return errors;
   }
 
