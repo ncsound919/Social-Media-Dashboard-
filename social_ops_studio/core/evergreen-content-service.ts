@@ -116,7 +116,21 @@ export class EvergreenContentService {
    */
   getPostsReadyForRecycle(): EvergreenContent[] {
     const allContent = this.getAllEvergreenContent();
-    return allContent.filter(e => this.shouldRecycle(e.postDraftId));
+    const now = new Date();
+    const nowTime = now.getTime();
+    
+    return allContent.filter(evergreen => {
+      if (!evergreen.isEvergreen) return false;
+      
+      // Check if max recycle count reached
+      if (this.config.maxRecycleCount && evergreen.recycleCount >= this.config.maxRecycleCount) {
+        return false;
+      }
+      
+      // Check if it's time to recycle
+      if (!evergreen.nextRecycleAt) return false;
+      return new Date(evergreen.nextRecycleAt).getTime() <= nowTime;
+    });
   }
 
   /**
@@ -156,8 +170,16 @@ export class EvergreenContentService {
     }
 
     // Find the largest gap between scheduled posts that meets minimum threshold
+    // Also consider gaps before the first post and after the last post
     let largestGap = 0;
     let suggestedTime: Date | null = null;
+    
+    // Check gap from now to first scheduled post
+    const gapBeforeFirst = scheduledTimes[0].getTime() - now.getTime();
+    if (gapBeforeFirst > largestGap && gapBeforeFirst >= minGapMs) {
+      largestGap = gapBeforeFirst;
+      suggestedTime = new Date(now.getTime() + gapBeforeFirst / 2);
+    }
 
     for (let i = 0; i < scheduledTimes.length - 1; i++) {
       const gap = scheduledTimes[i + 1].getTime() - scheduledTimes[i].getTime();
@@ -195,6 +217,13 @@ export class EvergreenContentService {
         // Use optimal slot if found, otherwise use midpoint
         suggestedTime = optimalSlot || new Date(gapStart.getTime() + gap / 2);
       }
+    }
+    
+    // Check gap from last scheduled post to future horizon
+    const gapAfterLast = futureDate.getTime() - scheduledTimes[scheduledTimes.length - 1].getTime();
+    if (gapAfterLast > largestGap && gapAfterLast >= minGapMs) {
+      largestGap = gapAfterLast;
+      suggestedTime = new Date(scheduledTimes[scheduledTimes.length - 1].getTime() + gapAfterLast / 2);
     }
 
     return suggestedTime;

@@ -112,7 +112,12 @@ export class LinkManager {
    * Get the full shortened URL with UTM parameters
    */
   getShortUrl(shortLink: ShortLink): string {
-    return `${this.config.shortDomain}/${shortLink.shortCode}`;
+    const domain = this.config.shortDomain;
+    // Add https:// protocol if not already present
+    const fullDomain = domain.startsWith('http://') || domain.startsWith('https://')
+      ? domain
+      : `https://${domain}`;
+    return `${fullDomain}/${shortLink.shortCode}`;
   }
 
   /**

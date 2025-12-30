@@ -115,7 +115,8 @@ export class AIContentVerificationService {
     }
 
     // Check if sources are required but missing
-    if (this.config.requireSourceUrls && aiContent.sourceUrls.length === 0) {
+    const missingSourceUrls = this.config.requireSourceUrls && aiContent.sourceUrls.length === 0;
+    if (missingSourceUrls) {
       warnings.push('No source URLs provided for AI-generated content');
     }
 
@@ -131,7 +132,9 @@ export class AIContentVerificationService {
     }
 
     return {
-      ready: warnings.length === 0 || !this.config.requireSourceUrls,
+      // Only block if source URLs are missing when required
+      // Other warnings don't block publication
+      ready: !missingSourceUrls,
       warnings,
     };
   }
@@ -289,13 +292,18 @@ export class AIContentVerificationService {
 
     try {
       const parsed = JSON.parse(stored);
+      // Add validation to handle malformed entries gracefully
+      if (!Array.isArray(parsed)) return [];
+      
       return parsed.map((content: any) => ({
         ...content,
         verifiedAt: content.verifiedAt ? new Date(content.verifiedAt) : null,
-        factChecks: content.factChecks.map((fc: any) => ({
-          ...fc,
-          verifiedAt: fc.verifiedAt ? new Date(fc.verifiedAt) : undefined,
-        })),
+        factChecks: Array.isArray(content.factChecks) 
+          ? content.factChecks.map((fc: any) => ({
+              ...fc,
+              verifiedAt: fc.verifiedAt ? new Date(fc.verifiedAt) : undefined,
+            }))
+          : [],
       }));
     } catch {
       return [];

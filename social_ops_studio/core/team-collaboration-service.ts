@@ -47,6 +47,13 @@ export class TeamCollaborationService {
     name: string,
     role: TeamRole
   ): Promise<TeamMember> {
+    const members = this.getAllTeamMembers();
+    
+    // Check for duplicate email
+    if (members.some(m => m.email.toLowerCase() === email.toLowerCase())) {
+      throw new Error('A team member with this email already exists');
+    }
+    
     const member: TeamMember = {
       id: uuidv4(),
       email,
@@ -57,7 +64,6 @@ export class TeamCollaborationService {
       status: 'pending',
     };
 
-    const members = this.getAllTeamMembers();
     members.push(member);
     this.saveAllTeamMembers(members);
 
@@ -151,6 +157,11 @@ export class TeamCollaborationService {
     const request = requests.find(r => r.id === requestId);
 
     if (!request) return null;
+    
+    // Ensure request is still pending before modifying
+    if (request.status !== 'pending') {
+      return null;
+    }
 
     request.status = 'approved';
     request.resolvedAt = new Date();
@@ -180,6 +191,11 @@ export class TeamCollaborationService {
     const request = requests.find(r => r.id === requestId);
 
     if (!request) return null;
+    
+    // Ensure request is still pending before modifying
+    if (request.status !== 'pending') {
+      return null;
+    }
 
     request.status = 'rejected';
     request.resolvedAt = new Date();
@@ -206,6 +222,11 @@ export class TeamCollaborationService {
     const request = requests.find(r => r.id === requestId);
 
     if (!request) return null;
+    
+    // Ensure request is still pending before modifying
+    if (request.status !== 'pending') {
+      return null;
+    }
 
     request.status = 'changes_requested';
     request.comments.push({
@@ -223,6 +244,12 @@ export class TeamCollaborationService {
    * Add a comment to an approval request
    */
   addComment(requestId: string, authorId: string, content: string): ApprovalComment | null {
+    // Verify the author is an active team member
+    const member = this.getAllTeamMembers().find(m => m.id === authorId);
+    if (!member || member.status !== 'active') {
+      throw new Error('Only active team members can add comments');
+    }
+    
     const requests = this.getAllApprovalRequests();
     const request = requests.find(r => r.id === requestId);
 
