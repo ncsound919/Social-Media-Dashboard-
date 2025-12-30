@@ -148,7 +148,7 @@ export class PublishingReliability {
           onRetry(retryCount, lastError);
         }
 
-        if (retryCount <= this.retryConfig.maxRetries) {
+        if (retryCount < this.retryConfig.maxRetries) {
           const delay = this.calculateRetryDelay(retryCount);
           await this.sleep(delay);
         }
