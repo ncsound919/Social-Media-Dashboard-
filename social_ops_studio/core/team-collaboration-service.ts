@@ -90,7 +90,19 @@ export class TeamCollaborationService {
    */
   hasPermission(memberId: string, permission: TeamPermission): boolean {
     const member = this.getTeamMember(memberId);
-    if (!member || member.status !== 'active') return false;
+
+    // If the member does not exist, preserve existing behavior and return false.
+    if (!member) {
+      return false;
+    }
+
+    // If the member exists but is not active, surface a clear error instead of silently failing.
+    if (member.status !== 'active') {
+      throw new Error(
+        `Team member ${member.id} is not active (status: ${member.status}) and cannot perform this action`
+      );
+    }
+
     return member.permissions.includes(permission);
   }
 
@@ -286,7 +298,15 @@ export class TeamCollaborationService {
    */
   private saveAllTeamMembers(members: TeamMember[]): void {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(this.teamStorageKey, JSON.stringify(members));
+    try {
+      localStorage.setItem(this.teamStorageKey, JSON.stringify(members));
+    } catch (error) {
+      if (error instanceof Error && error.name === 'QuotaExceededError') {
+        console.error('Failed to save team members: Storage quota exceeded');
+        throw new Error('Storage quota exceeded. Please free up space and try again.');
+      }
+      throw error;
+    }
   }
 
   /**
@@ -319,6 +339,14 @@ export class TeamCollaborationService {
    */
   private saveAllApprovalRequests(requests: ApprovalRequest[]): void {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(this.approvalsStorageKey, JSON.stringify(requests));
+    try {
+      localStorage.setItem(this.approvalsStorageKey, JSON.stringify(requests));
+    } catch (error) {
+      if (error instanceof Error && error.name === 'QuotaExceededError') {
+        console.error('Failed to save approval requests: Storage quota exceeded');
+        throw new Error('Storage quota exceeded. Please free up space and try again.');
+      }
+      throw error;
+    }
   }
 }

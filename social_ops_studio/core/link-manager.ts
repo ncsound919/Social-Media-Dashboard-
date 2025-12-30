@@ -24,6 +24,14 @@ export class LinkManager {
 
   constructor(config?: Partial<LinkConfig>) {
     this.config = { ...defaultLinkConfig, ...config };
+    
+    // Warn if using default placeholder domain in development
+    if (this.config.shortDomain === 'soc.io' && 
+        typeof process !== 'undefined' && 
+        process.env && 
+        process.env.NODE_ENV !== 'production') {
+      console.warn('LinkManager: Using placeholder short domain "soc.io". Configure a real domain for production use.');
+    }
   }
 
   /**
@@ -34,7 +42,12 @@ export class LinkManager {
     postDraftId: string | null,
     customUtm?: Partial<UTMParameters>
   ): Promise<ShortLink> {
-    const shortCode = this.generateShortCode();
+    let shortCode: string;
+    try {
+      shortCode = this.generateShortCode();
+    } catch (error) {
+      throw new Error(`Failed to generate short code: ${error instanceof Error ? error.message : String(error)}`);
+    }
     
     const utmParameters: UTMParameters = {
       source: customUtm?.source || this.config.defaultUtmSource,
@@ -131,16 +144,22 @@ export class LinkManager {
     postDraftId: string,
     customUtm?: Partial<UTMParameters>
   ): Promise<{ processedText: string; shortLinks: ShortLink[] }> {
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const urlRegex = /\bhttps?:\/\/[^\s<>"')\]]*[^\s<>"'),.\]]/g;
     const urls = text.match(urlRegex) || [];
     const shortLinks: ShortLink[] = [];
+    const urlToShortLink = new Map<string, ShortLink>();
     let processedText = text;
 
     for (const url of urls) {
-      const shortLink = await this.shortenUrl(url, postDraftId, customUtm);
-      shortLinks.push(shortLink);
+      let shortLink = urlToShortLink.get(url);
+      if (!shortLink) {
+        shortLink = await this.shortenUrl(url, postDraftId, customUtm);
+        urlToShortLink.set(url, shortLink);
+        shortLinks.push(shortLink);
+      }
       const shortUrl = this.getShortUrl(shortLink);
-      processedText = processedText.replace(url, shortUrl);
+      // Replace all occurrences of the URL in the text with the short URL
+      processedText = processedText.split(url).join(shortUrl);
     }
 
     return { processedText, shortLinks };
@@ -231,6 +250,14 @@ export class LinkManager {
    */
   private saveAllShortLinks(links: ShortLink[]): void {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(this.storageKey, JSON.stringify(links));
+    try {
+      localStorage.setItem(this.storageKey, JSON.stringify(links));
+    } catch (error) {
+      if (error instanceof Error && error.name === 'QuotaExceededError') {
+        console.error('Failed to save short links: Storage quota exceeded');
+        throw new Error('Storage quota exceeded. Please free up space and try again.');
+      }
+      throw error;
+    }
   }
 }

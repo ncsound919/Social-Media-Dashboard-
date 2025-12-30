@@ -217,13 +217,22 @@ export class ContentPillarService {
    */
   private saveAllPillars(pillars: ContentPillar[]): void {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(this.storageKey, JSON.stringify(pillars));
+    try {
+      localStorage.setItem(this.storageKey, JSON.stringify(pillars));
+    } catch (error) {
+      if (error instanceof Error && error.name === 'QuotaExceededError') {
+        console.error('Failed to save content pillars: Storage quota exceeded');
+        throw new Error('Storage quota exceeded. Please free up space and try again.');
+      }
+      throw error;
+    }
   }
 
   /**
    * Check if pillars meet target frequency
+   * Thresholds: under (<80% of target), on-track (80-120% of target), over (>120% of target)
    */
-  checkFrequencyTargets(weeklyPostCount: Record<string, number>): {
+  checkFrequencyTargets(weeklyPostCountByPillarId: Record<string, number>): {
     pillar: ContentPillar;
     target: number;
     actual: number;
@@ -235,10 +244,11 @@ export class ContentPillarService {
     for (const pillar of pillars) {
       if (!pillar.targetFrequency) continue;
 
-      const actual = weeklyPostCount[pillar.id] || 0;
+      const actual = weeklyPostCountByPillarId[pillar.id] || 0;
       const target = pillar.targetFrequency;
 
       let status: 'under' | 'on-track' | 'over';
+      // Thresholds: 20% tolerance on either side of target
       if (actual < target * 0.8) {
         status = 'under';
       } else if (actual > target * 1.2) {

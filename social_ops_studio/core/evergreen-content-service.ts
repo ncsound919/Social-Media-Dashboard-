@@ -168,18 +168,28 @@ export class EvergreenContentService {
         const gapStart = scheduledTimes[i];
         const gapEnd = scheduledTimes[i + 1];
         
-        // Try to find an optimal hour within the gap
+        // Try to find an optimal hour within the gap, iterating over days in the gap
         let optimalSlot: Date | null = null;
-        for (const hour of optimalHours) {
-          const candidate = new Date(gapStart);
-          candidate.setHours(hour, 0, 0, 0);
-          
-          // If candidate is within the gap and meets minimum spacing
-          if (candidate.getTime() > gapStart.getTime() + minGapMs &&
-              candidate.getTime() < gapEnd.getTime() - minGapMs) {
-            optimalSlot = candidate;
-            break;
+        
+        // Start from the date of gapStart (at midnight) and iterate day by day up to gapEnd
+        const dayIterator = new Date(gapStart.getTime());
+        dayIterator.setHours(0, 0, 0, 0);
+        
+        while (!optimalSlot && dayIterator.getTime() <= gapEnd.getTime()) {
+          for (const hour of optimalHours) {
+            const candidate = new Date(dayIterator.getTime());
+            candidate.setHours(hour, 0, 0, 0);
+            
+            // If candidate is within the gap and meets minimum spacing
+            if (candidate.getTime() > gapStart.getTime() + minGapMs &&
+                candidate.getTime() < gapEnd.getTime() - minGapMs) {
+              optimalSlot = candidate;
+              break;
+            }
           }
+          
+          // Move to the next day
+          dayIterator.setDate(dayIterator.getDate() + 1);
         }
         
         // Use optimal slot if found, otherwise use midpoint
@@ -273,6 +283,14 @@ export class EvergreenContentService {
    */
   private saveAllEvergreenContent(content: EvergreenContent[]): void {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(this.storageKey, JSON.stringify(content));
+    try {
+      localStorage.setItem(this.storageKey, JSON.stringify(content));
+    } catch (error) {
+      if (error instanceof Error && error.name === 'QuotaExceededError') {
+        console.error('Failed to save evergreen content: Storage quota exceeded');
+        throw new Error('Storage quota exceeded. Please free up space and try again.');
+      }
+      throw error;
+    }
   }
 }

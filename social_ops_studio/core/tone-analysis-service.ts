@@ -208,7 +208,7 @@ export class ToneAnalysisService {
    * Quick tone check for real-time feedback
    */
   quickToneCheck(text: string): { tone: string; confidence: number } {
-    const toneScores = this.detectTones(text.toLowerCase());
+    const toneScores = this.detectTones(text);
     const primaryTone = this.getPrimaryTone(toneScores);
     const confidence = this.calculateConfidence(toneScores, primaryTone);
 

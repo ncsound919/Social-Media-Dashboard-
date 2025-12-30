@@ -143,8 +143,10 @@ export class AIContentVerificationService {
   extractClaimsForVerification(text: string): string[] {
     const claims: string[] = [];
     
-    // Split into sentences
-    const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
+    // Split into sentences, including a possible final sentence without terminating punctuation
+    const sentences = (text.match(/[^.!?]+(?:[.!?]+|$)/g) || [])
+      .map(sentence => sentence.trim())
+      .filter(sentence => sentence.length > 0);
 
     // Look for sentences that might contain facts
     const factIndicators = [
@@ -172,8 +174,8 @@ export class AIContentVerificationService {
       const hasPercentage = /\d+\s*%/.test(sentence);
       const hasStatistic = /\d+/.test(sentence) && (lower.includes('research') || lower.includes('study') || lower.includes('statistic'));
       
-      // Extract if: 2+ indicators, OR percentage with any indicator, OR statistic with research/study reference
-      if (matchCount >= 2 || (hasPercentage && matchCount >= 1) || hasStatistic) {
+      // Extract if: 2+ indicators or statistic with research/study reference
+      if (matchCount >= 2 || hasStatistic) {
         claims.push(sentence.trim());
       }
     });
@@ -305,6 +307,14 @@ export class AIContentVerificationService {
    */
   private saveAllAIContent(content: AIContentSource[]): void {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(this.storageKey, JSON.stringify(content));
+    try {
+      localStorage.setItem(this.storageKey, JSON.stringify(content));
+    } catch (error) {
+      if (error instanceof Error && error.name === 'QuotaExceededError') {
+        console.error('Failed to save AI content: Storage quota exceeded');
+        throw new Error('Storage quota exceeded. Please free up space and try again.');
+      }
+      throw error;
+    }
   }
 }
