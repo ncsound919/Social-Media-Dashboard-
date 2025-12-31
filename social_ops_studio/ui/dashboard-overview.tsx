@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAppStore } from '@/app/store';
 import { MetricCard, MetricRow } from '@/ui/metric-card';
 import { ChartCard } from '@/ui/chart-card';
+import clsx from 'clsx';
 import { 
   Eye, 
   Users, 
@@ -319,7 +320,13 @@ export function DashboardOverview() {
           </div>
         </div>
 
-        <div className="w-full h-2 bg-surface rounded-full mb-4 overflow-hidden">
+        <div
+          className="w-full h-2 bg-surface rounded-full mb-4 overflow-hidden"
+          role="progressbar"
+          aria-valuenow={readinessProgress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
           <div
             className="h-2 bg-gradient-to-r from-accent-cyan to-accent-purple rounded-full"
             style={{ width: `${readinessProgress}%` }}
