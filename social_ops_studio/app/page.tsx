@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useAppStore } from './store';
 import { Sidebar } from '@/ui/sidebar';
 import { Topbar } from '@/ui/topbar';
@@ -15,14 +15,66 @@ import { SettingsView } from '@/ui/settings-view';
 import { CommunityView } from '@/ui/community-view';
 import { CreatorOpsView } from '@/ui/creator-ops-view';
 import { ExperimentsView } from '@/ui/experiments-view';
+import { useKeyboardShortcuts, KeyboardShortcut } from '@/utils/keyboard-shortcuts';
+import { useToast } from '@/ui/toast';
 import clsx from 'clsx';
 
 export default function Home() {
-  const { currentPage, sidebarCollapsed, loadAllData } = useAppStore();
+  const { currentPage, sidebarCollapsed, loadAllData, setCurrentPage } = useAppStore();
+  const { addToast } = useToast();
 
   useEffect(() => {
     loadAllData();
   }, [loadAllData]);
+
+  // Define keyboard shortcuts
+  const shortcuts: KeyboardShortcut[] = useMemo(() => [
+    {
+      key: '1',
+      ctrl: true,
+      description: 'Go to Overview',
+      action: () => setCurrentPage('Overview'),
+    },
+    {
+      key: '2',
+      ctrl: true,
+      description: 'Go to Content Lab',
+      action: () => setCurrentPage('Content Lab'),
+    },
+    {
+      key: '3',
+      ctrl: true,
+      description: 'Go to Schedule',
+      action: () => setCurrentPage('Schedule'),
+    },
+    {
+      key: '4',
+      ctrl: true,
+      description: 'Go to Analytics',
+      action: () => setCurrentPage('Analytics'),
+    },
+    {
+      key: ',',
+      ctrl: true,
+      description: 'Settings',
+      action: () => setCurrentPage('Settings'),
+    },
+    {
+      key: 'n',
+      ctrl: true,
+      description: 'New Post',
+      action: () => {
+        setCurrentPage('Content Lab');
+        addToast({
+          type: 'info',
+          title: 'New Post',
+          message: 'Create your new post in Content Lab',
+        });
+      },
+    },
+  ], [setCurrentPage, addToast]);
+
+  useKeyboardShortcuts(shortcuts);
 
   const renderPage = () => {
     switch (currentPage) {
