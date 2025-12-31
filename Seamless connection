@@ -1,0 +1,133 @@
+mainly Facebook, Twitter, Instagram, x, tik tok
+
+Use OAuth 2.0 with PKCE for seamless "Connect Account" buttons on Facebook, Twitter/X, Instagram (via Meta), and TikTok in your PyQt6 desktop dashboard—no backend needed. Each platform supports desktop/native apps with localhost callbacks, fitting your local-first preferences. Open the system browser, capture the auth code locally, exchange for tokens, and store securely for posting/analytics.
+
+## Platform Setup Guide
+Register as "Desktop/Native" app on each developer portal (free, quick approval for personal use).
+
+| Platform | App Type | Redirect URI | Essential Scopes | Token Endpoint |
+|----------|----------|--------------|------------------|---------------|
+| Twitter/X | Native App | `http://localhost:8080/callback` | `tweet.read tweet.write users.read offline.access` | `https://api.twitter.com/2/oauth2/token` [1] |
+| Facebook | Desktop | `http://localhost:8080/callback` | `pages_manage_posts pages_read_engagement` | `https://graph.facebook.com/v20.0/oauth/access_token` [2] |
+| Instagram (Meta) | Desktop | `http://localhost:8080/callback` | `instagram_basic pages_show_list pages_read_engagement` | Same as Facebook [3] |
+| TikTok | Web/Desktop | `http://localhost:8080/callback` | `user.info.basic video.list video.upload` | `https://open.tiktokapis.com/v2/oauth/token/` [4] |
+
+## PyQt6 Implementation Template
+Add this to your dashboard as modular "Connect" buttons. Reuse across platforms by swapping endpoints.
+
+```python
+import hashlib, base64, secrets, threading, http.server, socketserver, urllib.parse
+from PyQt6.QtCore import QUrl, pyqtSignal
+from PyQt6.QtWebEngineWidgets import QWebEngineView
+import keyring  # pip install keyring
+
+class OAuthHandler(http.server.BaseHTTPRequestHandler):
+    code_received = pyqtSignal(str, str)  # code, state
+    
+    def do_GET(self):
+        query = urllib.parse.urlparse(self.path).query
+        params = urllib.parse.parse_qs(query)
+        code = params.get('code', [''])[0]
+        if code:
+            self.code_received.emit(code, params.get('state', [''])[0])
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b'Success! You can close this window.')
+
+class SocialAuth:
+    def __init__(self, client_id, auth_url_base, scopes, token_url, service_name):
+        self.client_id = client_id
+        self.auth_url_base = auth_url_base
+        self.scopes = scopes
+        self.token_url = token_url
+        self.service_name = service_name
+        self.tokens = {}
+    
+    def connect(self):
+        # PKCE
+        self.verifier = secrets.token_urlsafe(128)
+        challenge = base64.urlsafe_b64encode(
+            hashlib.sha256(self.verifier.encode()).digest()
+        ).decode('utf-8').rstrip('=')
+        
+        auth_url = f"{self.auth_url_base}?client_id={self.client_id}&response_type=code&redirect_uri=http://localhost:8080/callback&scope={' '.join(self.scopes)}&code_challenge={challenge}&code_challenge_method=S256"
+        
+        # Local server
+        self.server = None
+        def start_server():
+            with socketserver.TCPServer(("", 8080), OAuthHandler) as httpd:
+                self.server = httpd
+                handler = httpd.RequestHandlerClass()
+                handler.code_received.connect(self.on_code_received)
+                httpd.serve_forever()
+        
+        threading.Thread(target=start_server, daemon=True).start()
+        
+        # Open browser (or embed QWebEngineView)
+        import webbrowser
+        webbrowser.open(auth_url)
+    
+    def on_code_received(self, code, state):
+        # Exchange code for tokens
+        data = {
+            'client_id': self.client_id,
+            'grant_type': 'authorization_code',
+            'code': code,
+            'redirect_uri': 'http://localhost:8080/callback',
+            'code_verifier': self.verifier
+        }
+        import requests
+        resp = requests.post(self.token_url, data=data).json()
+        self.tokens = resp  # Store access_token, refresh_token
+        
+        keyring.set_password(self.service_name, "main_account", resp['access_token'])
+        print(f"{self.service_name} connected!")
+        if self.server: self.server.shutdown()
+```
+
+## Usage in Dashboard
+```python
+# Twitter example
+twitter = SocialAuth(
+    client_id="your_app_client_id",
+    auth_url_base="https://twitter.com/i/oauth2/authorize",
+    scopes=["tweet.read", "tweet.write", "offline.access"],
+    token_url="https://api.twitter.com/2/oauth2/token",
+    service_name="twitter"
+)
+
+# Connect button callback
+twitter.connect()
+```
+Status badges update to green "Connected ✓" post-auth. Auto-refresh tokens using refresh_token. Test Twitter first—simplest flow.[5][6][7][8]
+
+## Quick Wins
+- **Button UX:** "🔴 Connect Twitter" → "🟢 Twitter Connected" with account handle.
+- **Multi-Account:** Add `account_id` param to keyring for teams later.
+- **Error Handling:** Platform-specific error parsing + retry button.
+- **Scopes Polish:** Consent screens explain "Post tweets, view analytics" clearly.[9][10]
+
+Citations:
+[1] How to use Twitter OAuth 2.0 and Passport.js for user login https://dev.to/superface/how-to-use-twitter-oauth-20-and-passportjs-for-user-login-33fk
+[2] Manually Build a Login Flow - Meta for Developers - Facebook https://developers.facebook.com/docs/facebook-login/guides/advanced/manual-flow/
+[3] OAuth Setup Procedure for Facebook Social Media Login https://docs.commscope.com/bundle/unleashed-200.16-onlinehelp/page/GUID-221C0933-9E6B-4218-A625-72AB6FB3EB50.html
+[4] Top 10 Social Media APIs for Developers - Ayrshare https://www.ayrshare.com/top-10-social-media-apis-for-developers/
+[5] OAuth 2.0 for iOS & Desktop Apps | Google for Developers https://developers.google.com/identity/protocols/oauth2/native-app
+[6] Qt OAuth2 Browser Support | Qt Network Authorization | Qt 6.10.1 https://doc.qt.io/qt-6/qt-oauth2-browsersupport.html
+[7] working with QWebEngineView in PyQt - ZetCode https://zetcode.com/pyqt/qwebengineview/
+[8] just redo the json more towards what I'm trying to build for myself. I def need all the different social platforms up there, with a dashboard style that matches the image style I posted https://www.perplexity.ai/search/58014720-190d-43e1-ada7-424063daa305
+[9] OAuth login in desktop apps - Damir's Corner https://www.damirscorner.com/blog/posts/20231229-OAuthLoginInDesktopApps.html
+[10] I don't want to use any LLM or third party tools. I want to make everything myself and I want this to be a desktop tool for myself not a saas: {
+  "project": {
+    "name": "Social Media Dashboard Pro",
+    "version": "2.0",
+    "description": "Enhanc...
+
+...content generation", "Team collaboration", "Advanced analytics"]
+    },
+    "business_tier": {
+      "price": "$99/month",
+      "features": ["White-labeling", "API access", "Custom integrations", "Priority support", "Dedicated instance"]
+    }
+  }
+} https://www.perplexity.ai/search/04213c0f-d9e1-4b63-9c95-029665fcf65f
