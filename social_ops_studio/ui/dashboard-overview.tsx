@@ -332,14 +332,26 @@ export function DashboardOverview() {
               key={item.id}
               className="flex items-start gap-3 p-3 rounded-lg bg-background/50 border border-white/5"
             >
-              <div className="p-1.5 rounded-full bg-green-500/20 text-green-400">
-                <CheckCircle size={16} />
+              <div
+                className={clsx(
+                  'p-1.5 rounded-full',
+                  item.completed ? 'bg-green-500/20 text-green-400' : 'bg-surface text-text-tertiary'
+                )}
+              >
+                {item.completed ? <CheckCircle size={16} /> : <Clock size={16} />}
               </div>
               <div className="flex-1">
                 <p className="font-medium">{item.title}</p>
                 <p className="text-xs text-text-secondary mt-1">{item.detail}</p>
               </div>
-              <span className="text-xs font-semibold text-green-400">Ready</span>
+              <span
+                className={clsx(
+                  'text-xs font-semibold',
+                  item.completed ? 'text-green-400' : 'text-text-tertiary'
+                )}
+              >
+                {item.completed ? 'Ready' : 'Pending'}
+              </span>
             </div>
           ))}
         </div>
