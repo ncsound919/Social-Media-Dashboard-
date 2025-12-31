@@ -49,6 +49,15 @@ export abstract class SocialPlatformAdapter {
   async getPostAnalytics(remoteId: string): Promise<Record<string, number> | null> {
     return null;
   }
+
+  // OAuth integration methods (optional - implement if platform supports OAuth)
+  async startOAuthFlow(): Promise<string | null> {
+    return null;
+  }
+
+  async completeOAuthFlow(code: string, state: string): Promise<boolean> {
+    return false;
+  }
 }
 
 // Mock implementation for demo purposes

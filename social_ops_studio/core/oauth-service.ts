@@ -32,6 +32,9 @@ export interface OAuthTokens {
   scope?: string;
 }
 
+// Default buffer time before token expiration to trigger refresh (5 minutes)
+const DEFAULT_TOKEN_REFRESH_BUFFER_SECONDS = 300;
+
 /**
  * Generate a cryptographically random string for code verifier
  * As per RFC 7636, code verifier should be 43-128 characters
@@ -265,7 +268,7 @@ export class OAuthService {
   /**
    * Check if a token is expired or will expire soon
    */
-  isTokenExpired(expiresAt: Date, bufferSeconds = 300): boolean {
+  isTokenExpired(expiresAt: Date, bufferSeconds = DEFAULT_TOKEN_REFRESH_BUFFER_SECONDS): boolean {
     const now = new Date();
     const expirationTime = new Date(expiresAt);
     const bufferTime = new Date(expirationTime.getTime() - bufferSeconds * 1000);

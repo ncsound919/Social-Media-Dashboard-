@@ -29,8 +29,8 @@ export class FacebookAdapter extends SocialPlatformAdapter {
 
   constructor() {
     super();
-    this.clientId = platformConfig.facebook?.clientId;
-    this.clientSecret = platformConfig.facebook?.clientSecret;
+    this.clientId = platformConfig.facebook.clientId;
+    this.clientSecret = platformConfig.facebook.clientSecret;
     this.oauthIntegration = createPlatformOAuth(this.platform);
   }
 
