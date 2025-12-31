@@ -180,6 +180,13 @@ export function SettingsView() {
         });
       }
     };
+    reader.onerror = () => {
+      addToast({
+        type: 'error',
+        title: 'Read Failed',
+        message: 'Failed to read the file. Please try again.',
+      });
+    };
     reader.readAsText(file);
     
     // Reset file input
