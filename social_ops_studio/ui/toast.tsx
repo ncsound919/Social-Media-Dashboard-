@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -36,9 +36,11 @@ interface ToastProviderProps {
 
 export function ToastProvider({ children }: ToastProviderProps) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const toastIdCounter = useRef(0);
 
   const addToast = useCallback((toast: Omit<Toast, 'id'>) => {
-    const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    toastIdCounter.current += 1;
+    const id = `toast-${toastIdCounter.current}-${Date.now()}`;
     const newToast: Toast = { ...toast, id };
     
     setToasts((prev) => [...prev, newToast]);

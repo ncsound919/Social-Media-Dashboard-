@@ -83,6 +83,11 @@ export function SettingsView() {
     showAnimations: true,
   });
 
+  // Helper to check if a key is app-related
+  const isAppDataKey = (key: string): boolean => {
+    return key.startsWith('sos_') || key === 'autosave_states';
+  };
+
   // Calculate storage used
   const calculateStorageUsed = useCallback(() => {
     if (typeof window === 'undefined') return { used: 0, percentage: 0 };
@@ -90,7 +95,8 @@ export function SettingsView() {
     let totalSize = 0;
     for (const key in localStorage) {
       if (Object.prototype.hasOwnProperty.call(localStorage, key)) {
-        totalSize += (localStorage.getItem(key)?.length || 0) * 2; // UTF-16 = 2 bytes per char
+        const value = localStorage.getItem(key);
+        totalSize += (value?.length || 0) * 2; // UTF-16 = 2 bytes per char
       }
     }
     const usedKB = totalSize / 1024;
@@ -108,23 +114,15 @@ export function SettingsView() {
     try {
       const data: Record<string, unknown> = {};
       for (const key in localStorage) {
-        if (Object.prototype.hasOwnProperty.call(localStorage, key) && key.startsWith('sos_')) {
-          try {
-            data[key] = JSON.parse(localStorage.getItem(key) || '');
-          } catch {
-            data[key] = localStorage.getItem(key);
+        if (Object.prototype.hasOwnProperty.call(localStorage, key) && isAppDataKey(key)) {
+          const value = localStorage.getItem(key);
+          if (value) {
+            try {
+              data[key] = JSON.parse(value);
+            } catch {
+              data[key] = value;
+            }
           }
-        }
-      }
-      
-      // Also include autosave states
-      const autosaveKey = 'autosave_states';
-      const autosaveData = localStorage.getItem(autosaveKey);
-      if (autosaveData) {
-        try {
-          data[autosaveKey] = JSON.parse(autosaveData);
-        } catch {
-          data[autosaveKey] = autosaveData;
         }
       }
 
@@ -193,11 +191,10 @@ export function SettingsView() {
   // Clear all data
   const handleClearData = useCallback(() => {
     if (window.confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
-      // Remove all sos_ prefixed items and autosave
+      // Remove all app-related items
       const keysToRemove: string[] = [];
       for (const key in localStorage) {
-        if (Object.prototype.hasOwnProperty.call(localStorage, key) && 
-            (key.startsWith('sos_') || key === 'autosave_states')) {
+        if (Object.prototype.hasOwnProperty.call(localStorage, key) && isAppDataKey(key)) {
           keysToRemove.push(key);
         }
       }

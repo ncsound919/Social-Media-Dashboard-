@@ -30,8 +30,8 @@ export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
       }
 
       for (const shortcut of shortcuts) {
-        const ctrlOrMeta = shortcut.ctrl || shortcut.meta;
-        const isCtrlOrMetaMatch = ctrlOrMeta
+        const requiresCtrlOrMeta = shortcut.ctrl || shortcut.meta;
+        const isCtrlOrMetaMatch = requiresCtrlOrMeta
           ? event.ctrlKey || event.metaKey
           : !event.ctrlKey && !event.metaKey;
         const isShiftMatch = shortcut.shift ? event.shiftKey : !event.shiftKey;
