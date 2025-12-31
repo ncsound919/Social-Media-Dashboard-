@@ -17,8 +17,6 @@ Add this to your dashboard as modular "Connect" buttons. Reuse across platforms 
 
 ```python
 import hashlib, base64, secrets, threading, http.server, socketserver, urllib.parse
-from PyQt6.QtCore import QUrl, pyqtSignal
-from PyQt6.QtWebEngineWidgets import QWebEngineView
 import keyring  # pip install keyring
 
 class OAuthHandler(http.server.BaseHTTPRequestHandler):
@@ -73,7 +71,7 @@ class SocialAuth:
         OAuthHandler.auth_state = None
         
         def start_server():
-            self.server = socketserver.TCPServer(("", 8080), OAuthHandler)
+            self.server = socketserver.TCPServer(("127.0.0.1", 8080), OAuthHandler)
             self.server.handle_request()  # Handle single request
             if OAuthHandler.auth_code:
                 self.on_code_received(OAuthHandler.auth_code, OAuthHandler.auth_state)
@@ -113,6 +111,8 @@ class SocialAuth:
         self.tokens = resp  # Store access_token, refresh_token
         
         keyring.set_password(self.service_name, "main_account", resp['access_token'])
+        if 'refresh_token' in resp:
+            keyring.set_password(self.service_name, "refresh_token", resp['refresh_token'])
         print(f"{self.service_name} connected!")
         if hasattr(self, 'server') and self.server:
             self.server.shutdown()
