@@ -326,34 +326,40 @@ export function DashboardOverview() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {readinessChecklist.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-start gap-3 p-3 rounded-lg bg-background/50 border border-white/5"
-            >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3" role="list">
+          {readinessChecklist.map((item) => {
+            const statusId = `readiness-status-${item.id}`;
+            return (
               <div
-                className={clsx(
-                  'p-1.5 rounded-full',
-                  item.completed ? 'bg-green-500/20 text-green-400' : 'bg-surface text-text-tertiary'
-                )}
+                key={item.id}
+                role="listitem"
+                aria-describedby={statusId}
+                className="flex items-start gap-3 p-3 rounded-lg bg-background/50 border border-white/5"
               >
-                {item.completed ? <CheckCircle size={16} /> : <Clock size={16} />}
+                <div
+                  className={clsx(
+                    'p-1.5 rounded-full',
+                    item.completed ? 'bg-green-500/20 text-green-400' : 'bg-surface text-text-tertiary'
+                  )}
+                >
+                  {item.completed ? <CheckCircle size={16} /> : <Clock size={16} />}
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">{item.title}</p>
+                  <p className="text-xs text-text-secondary mt-1">{item.detail}</p>
+                </div>
+                <span
+                  id={statusId}
+                  className={clsx(
+                    'text-xs font-semibold',
+                    item.completed ? 'text-green-400' : 'text-text-tertiary'
+                  )}
+                >
+                  {item.completed ? 'Ready' : 'Pending'}
+                </span>
               </div>
-              <div className="flex-1">
-                <p className="font-medium">{item.title}</p>
-                <p className="text-xs text-text-secondary mt-1">{item.detail}</p>
-              </div>
-              <span
-                className={clsx(
-                  'text-xs font-semibold',
-                  item.completed ? 'text-green-400' : 'text-text-tertiary'
-                )}
-              >
-                {item.completed ? 'Ready' : 'Pending'}
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
