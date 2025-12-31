@@ -3,11 +3,13 @@
  */
 export * from './base-adapter';
 export * from './twitter-adapter';
+export * from './facebook-adapter';
 export * from './instagram-adapter';
 export * from './tiktok-adapter';
 
 import { SocialPlatformAdapter } from './base-adapter';
 import { TwitterAdapter } from './twitter-adapter';
+import { FacebookAdapter } from './facebook-adapter';
 import { InstagramAdapter } from './instagram-adapter';
 import { TikTokAdapter } from './tiktok-adapter';
 import { Platform } from '@/data/models';
@@ -20,6 +22,9 @@ export function getAdapter(platform: Platform): SocialPlatformAdapter | null {
     switch (platform) {
       case 'twitter_x':
         adapters.set(platform, new TwitterAdapter());
+        break;
+      case 'facebook_pages':
+        adapters.set(platform, new FacebookAdapter());
         break;
       case 'instagram_business':
         adapters.set(platform, new InstagramAdapter());

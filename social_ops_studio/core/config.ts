@@ -17,6 +17,10 @@ export interface PlatformConfig {
     clientId: string | undefined;
     clientSecret: string | undefined;
   };
+  facebook: {
+    clientId: string | undefined;
+    clientSecret: string | undefined;
+  };
   instagram: {
     clientId: string | undefined;
     clientSecret: string | undefined;
@@ -59,6 +63,10 @@ export function loadPlatformConfig(): PlatformConfig {
     twitter: {
       clientId: process.env.TWITTER_CLIENT_ID,
       clientSecret: process.env.TWITTER_CLIENT_SECRET,
+    },
+    facebook: {
+      clientId: process.env.FACEBOOK_CLIENT_ID,
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
     },
     instagram: {
       clientId: process.env.INSTAGRAM_CLIENT_ID,
