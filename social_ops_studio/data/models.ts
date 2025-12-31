@@ -367,3 +367,18 @@ export interface AutosaveState {
   savedAt: Date;
   version: number;
 }
+
+// Mobile Sync Notification (Platform-Specific Fidelity)
+export interface MobileSyncNotification {
+  id: string;
+  postDraftId: string;
+  scheduledPostId: string;
+  platform: Platform;
+  mediaUrls: string[];
+  caption: string;
+  scheduledFor: Date;
+  status: 'pending' | 'acknowledged' | 'completed' | 'cancelled';
+  createdAt: Date;
+  acknowledgedAt: Date | null;
+  completedAt: Date | null;
+}
