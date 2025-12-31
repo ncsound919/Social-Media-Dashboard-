@@ -161,6 +161,7 @@ export function SettingsView() {
         const data = JSON.parse(e.target?.result as string);
         
         for (const [key, value] of Object.entries(data)) {
+          if (!isAppDataKey(key)) continue; // Only import app-related keys
           localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
         }
 
