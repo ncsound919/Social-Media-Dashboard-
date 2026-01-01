@@ -78,6 +78,22 @@ For each platform you want to integrate, you need to register your application a
    - Authorized redirect URIs: `http://localhost:3000/api/oauth/callback`
 5. Copy the **Client ID** and **Client Secret**
 
+#### LinkedIn Pages
+1. Go to [LinkedIn Developer Portal](https://www.linkedin.com/developers/)
+2. Create a new application
+3. In the "Auth" or "Authentication" settings, configure:
+   - **OAuth 2.0 redirect URL**: `http://localhost:3000/api/oauth/callback`
+4. Under "Products", ensure you have access to Marketing Developer Platform / Pages APIs as required by your use case.
+5. Request or enable the necessary permissions (such as organization and content-related scopes) according to LinkedIn's current API requirements.
+6. Copy the **Client ID** and **Client Secret**
+
+#### Pinterest
+1. Go to [Pinterest Developers](https://developers.pinterest.com/)
+2. Create a new app in your Pinterest developer account
+3. In the app settings, configure:
+   - **Redirect URI**: `http://localhost:3000/api/oauth/callback`
+4. Request or enable the necessary scopes for managing boards, pins, and analytics as required by your use case.
+5. Save your changes and copy the **App ID/Client ID** and **App Secret/Client Secret**
 ### 2. Configure Environment Variables
 
 Copy the `.env.example` file to `.env.local`:
@@ -108,6 +124,14 @@ TIKTOK_CLIENT_SECRET=your_tiktok_client_secret
 # YouTube (Google)
 YOUTUBE_CLIENT_ID=your_google_client_id
 YOUTUBE_CLIENT_SECRET=your_google_client_secret
+
+# LinkedIn Pages
+LINKEDIN_CLIENT_ID=your_linkedin_client_id
+LINKEDIN_CLIENT_SECRET=your_linkedin_client_secret
+
+# Pinterest
+PINTEREST_CLIENT_ID=your_pinterest_client_id
+PINTEREST_CLIENT_SECRET=your_pinterest_client_secret
 ```
 
 ### 3. Update Redirect URIs for Production

@@ -146,8 +146,8 @@ export class PlatformOAuthIntegration {
       return false;
     }
     
-    // Check if token is not expired
-    return !oauthService.isTokenExpired(this.tokens.expiresAt, 0);
+    // Check if token is not expired (using the same buffer as getAccessToken)
+    return !oauthService.isTokenExpired(this.tokens.expiresAt);
   }
 
   /**
