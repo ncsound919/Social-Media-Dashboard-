@@ -54,9 +54,6 @@ class SocialAuth:
             hashlib.sha256(self.verifier.encode()).digest()
         ).decode('utf-8').rstrip('=')
         
-        # Generate state for CSRF protection
-        self.state = secrets.token_urlsafe(32)
-        
         # Build auth URL with proper URL encoding
         params = urllib.parse.urlencode({
             'client_id': self.client_id,
@@ -64,8 +61,7 @@ class SocialAuth:
             'redirect_uri': 'http://localhost:8080/callback',
             'scope': ' '.join(self.scopes),
             'code_challenge': challenge,
-            'code_challenge_method': 'S256',
-            'state': self.state
+            'code_challenge_method': 'S256'
         })
         auth_url = f"{self.auth_url_base}?{params}"
         
@@ -77,12 +73,8 @@ class SocialAuth:
         def start_server():
             self.server = socketserver.TCPServer(("127.0.0.1", 8080), OAuthHandler)
             self.server.handle_request()  # Handle single request
-            self.server.server_close()  # Release port 8080
-            # Store values locally to avoid race conditions
-            auth_code = OAuthHandler.auth_code
-            auth_state = OAuthHandler.auth_state
-            if auth_code:
-                self.on_code_received(auth_code, auth_state)
+            if OAuthHandler.auth_code:
+                self.on_code_received(OAuthHandler.auth_code, OAuthHandler.auth_state)
         
         threading.Thread(target=start_server, daemon=True).start()
         
@@ -91,11 +83,6 @@ class SocialAuth:
         webbrowser.open(auth_url)
     
     def on_code_received(self, code, state):
-        # Validate state for CSRF protection
-        if state != self.state:
-            print(f"{self.service_name} CSRF validation failed: state mismatch")
-            return
-        
         # Exchange code for tokens
         data = {
             'client_id': self.client_id,
@@ -111,10 +98,14 @@ class SocialAuth:
             resp = response.json()
         except requests.RequestException as e:
             print(f"{self.service_name} token exchange failed: {e}")
+            if hasattr(self, 'server') and self.server:
+                self.server.shutdown()
             return
         
         if 'access_token' not in resp:
             print(f"{self.service_name} error: {resp.get('error_description', 'Unknown error')}")
+            if hasattr(self, 'server') and self.server:
+                self.server.shutdown()
             return
         
         self.tokens = resp  # Store access_token, refresh_token
@@ -123,6 +114,8 @@ class SocialAuth:
         if 'refresh_token' in resp:
             keyring.set_password(self.service_name, "refresh_token", resp['refresh_token'])
         print(f"{self.service_name} connected!")
+        if hasattr(self, 'server') and self.server:
+            self.server.shutdown()
 ```
 
 ## Usage in Dashboard
