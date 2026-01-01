@@ -78,8 +78,11 @@ class SocialAuth:
             self.server = socketserver.TCPServer(("127.0.0.1", 8080), OAuthHandler)
             self.server.handle_request()  # Handle single request
             self.server.server_close()  # Release port 8080
-            if OAuthHandler.auth_code:
-                self.on_code_received(OAuthHandler.auth_code, OAuthHandler.auth_state)
+            # Store values locally to avoid race conditions
+            auth_code = OAuthHandler.auth_code
+            auth_state = OAuthHandler.auth_state
+            if auth_code:
+                self.on_code_received(auth_code, auth_state)
         
         threading.Thread(target=start_server, daemon=True).start()
         
