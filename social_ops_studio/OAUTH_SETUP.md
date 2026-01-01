@@ -108,6 +108,14 @@ TIKTOK_CLIENT_SECRET=your_tiktok_client_secret
 # YouTube (Google)
 YOUTUBE_CLIENT_ID=your_google_client_id
 YOUTUBE_CLIENT_SECRET=your_google_client_secret
+
+# LinkedIn Pages
+LINKEDIN_CLIENT_ID=your_linkedin_client_id
+LINKEDIN_CLIENT_SECRET=your_linkedin_client_secret
+
+# Pinterest
+PINTEREST_CLIENT_ID=your_pinterest_client_id
+PINTEREST_CLIENT_SECRET=your_pinterest_client_secret
 ```
 
 ### 3. Update Redirect URIs for Production
