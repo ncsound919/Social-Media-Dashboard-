@@ -118,7 +118,8 @@ export class FacebookAdapter extends SocialPlatformAdapter {
       return true;
     }
     
-    return true;
+    // No authenticated OAuth integration available; connection is not valid
+    return false;
   }
 
   /**
