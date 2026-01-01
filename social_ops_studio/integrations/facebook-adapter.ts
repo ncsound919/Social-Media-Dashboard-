@@ -1,5 +1,5 @@
 /**
- * TikTok Platform Adapter
+ * Facebook Pages Platform Adapter
  * Following coding rule: Subclass base adapter, implement same methods
  */
 
@@ -17,11 +17,11 @@ import { createPlatformOAuth, PlatformOAuthIntegration } from '@/core/platform-o
 import { logger } from '@/utils/logging';
 import { v4 as uuidv4 } from 'uuid';
 
-export class TikTokAdapter extends SocialPlatformAdapter {
-  readonly platform: Platform = 'tiktok';
-  readonly displayName = 'TikTok';
-  readonly primaryColor = '#010101';
-  readonly supports = ['short_video', 'captions', 'scheduling_limited', 'analytics_basic'];
+export class FacebookAdapter extends SocialPlatformAdapter {
+  readonly platform: Platform = 'facebook_pages';
+  readonly displayName = 'Facebook Pages';
+  readonly primaryColor = '#1877F2';
+  readonly supports = ['text', 'image', 'video', 'link', 'scheduling', 'analytics_basic'];
 
   private clientId: string | undefined;
   private clientSecret: string | undefined;
@@ -29,34 +29,26 @@ export class TikTokAdapter extends SocialPlatformAdapter {
 
   constructor() {
     super();
-    this.clientId = platformConfig.tiktok.clientId;
-    this.clientSecret = platformConfig.tiktok.clientSecret;
+    this.clientId = platformConfig.facebook.clientId;
+    this.clientSecret = platformConfig.facebook.clientSecret;
     this.oauthIntegration = createPlatformOAuth(this.platform);
   }
 
   async publishPost(content: PostContent): Promise<PublishResult> {
     try {
-      // TikTok requires video content
-      if (content.mediaIds.length === 0) {
-        return {
-          success: false,
-          remoteId: null,
-          errorMessage: 'TikTok posts require video content',
-        };
-      }
-
-      logger.info('Publishing to TikTok', { caption: content.text.substring(0, 50) });
+      logger.info('Publishing to Facebook', { textLength: content.text.length });
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 600));
 
       return {
         success: true,
-        remoteId: `tt_${uuidv4()}`,
+        remoteId: `fb_${uuidv4()}`,
         errorMessage: null,
         publishedAt: new Date(),
       };
     } catch (error) {
-      logger.error('TikTok publish failed', { error });
+      logger.error('Facebook publish failed', { error });
       return {
         success: false,
         remoteId: null,
@@ -67,7 +59,7 @@ export class TikTokAdapter extends SocialPlatformAdapter {
 
   async fetchBasicMetrics(): Promise<FetchMetricsResult> {
     try {
-      logger.info('Fetching TikTok metrics');
+      logger.info('Fetching Facebook metrics');
       
       return {
         success: true,
@@ -75,7 +67,7 @@ export class TikTokAdapter extends SocialPlatformAdapter {
         errorMessage: null,
       };
     } catch (error) {
-      logger.error('TikTok metrics fetch failed', { error });
+      logger.error('Facebook metrics fetch failed', { error });
       return {
         success: false,
         metrics: null,
@@ -86,26 +78,27 @@ export class TikTokAdapter extends SocialPlatformAdapter {
 
   async uploadMedia(filePath: string, mimeType: string): Promise<MediaUploadResult> {
     try {
-      // TikTok only supports video
-      if (!mimeType.startsWith('video/')) {
+      // Facebook supports images and videos
+      const supportedFormats = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/mov'];
+      if (!supportedFormats.some(format => mimeType.startsWith(format.split('/')[0]))) {
         return {
           success: false,
           mediaId: null,
-          errorMessage: 'TikTok only accepts video content',
+          errorMessage: `Unsupported media format: ${mimeType}`,
         };
       }
 
-      logger.info('Uploading media to TikTok', { filePath, mimeType });
+      logger.info('Uploading media to Facebook', { filePath, mimeType });
       
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1200));
 
       return {
         success: true,
-        mediaId: `tt_media_${uuidv4()}`,
+        mediaId: `fb_media_${uuidv4()}`,
         errorMessage: null,
       };
     } catch (error) {
-      logger.error('TikTok media upload failed', { error });
+      logger.error('Facebook media upload failed', { error });
       return {
         success: false,
         mediaId: null,
@@ -116,7 +109,7 @@ export class TikTokAdapter extends SocialPlatformAdapter {
 
   async validateConnection(): Promise<boolean> {
     if (!this.clientId || !this.clientSecret) {
-      logger.warn('TikTok credentials not configured');
+      logger.warn('Facebook credentials not configured');
       return false;
     }
     
@@ -125,7 +118,8 @@ export class TikTokAdapter extends SocialPlatformAdapter {
       return true;
     }
     
-    return true;
+    // No authenticated OAuth integration available; connection is not valid
+    return false;
   }
 
   /**
@@ -133,7 +127,7 @@ export class TikTokAdapter extends SocialPlatformAdapter {
    */
   async startOAuthFlow(): Promise<string | null> {
     if (!this.oauthIntegration) {
-      logger.error('OAuth integration not available for TikTok');
+      logger.error('OAuth integration not available for Facebook');
       return null;
     }
     
@@ -150,16 +144,27 @@ export class TikTokAdapter extends SocialPlatformAdapter {
    */
   async completeOAuthFlow(code: string, state: string): Promise<boolean> {
     if (!this.oauthIntegration) {
-      logger.error('OAuth integration not available for TikTok');
+      logger.error('OAuth integration not available for Facebook');
       return false;
     }
     
     try {
       await this.oauthIntegration.handleCallback(code, state);
-      logger.info('OAuth flow completed successfully for TikTok');
+      logger.info('OAuth flow completed successfully for Facebook');
       return true;
     } catch (error) {
       logger.error('Failed to complete OAuth flow', { error });
+      return false;
+    }
+  }
+
+  async deletePost(remoteId: string): Promise<boolean> {
+    try {
+      logger.info('Deleting Facebook post', { remoteId });
+      await new Promise(resolve => setTimeout(resolve, 300));
+      return true;
+    } catch (error) {
+      logger.error('Facebook delete failed', { error });
       return false;
     }
   }
