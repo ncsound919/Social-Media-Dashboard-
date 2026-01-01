@@ -79,8 +79,8 @@ export class FacebookAdapter extends SocialPlatformAdapter {
   async uploadMedia(filePath: string, mimeType: string): Promise<MediaUploadResult> {
     try {
       // Facebook supports images and videos
-      const supportedFormats = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/mov'];
-      if (!supportedFormats.some(format => mimeType.startsWith(format.split('/')[0]))) {
+      const supportedMimePrefixes = ['image/', 'video/'];
+      if (!supportedMimePrefixes.some(prefix => mimeType.startsWith(prefix))) {
         return {
           success: false,
           mediaId: null,
@@ -145,6 +145,17 @@ export class FacebookAdapter extends SocialPlatformAdapter {
   async completeOAuthFlow(code: string, state: string): Promise<boolean> {
     if (!this.oauthIntegration) {
       logger.error('OAuth integration not available for Facebook');
+      return false;
+    }
+    
+    // Validate input parameters
+    if (!code || !code.trim()) {
+      logger.error('Invalid authorization code provided');
+      return false;
+    }
+    
+    if (!state || !state.trim()) {
+      logger.error('Invalid state parameter provided');
       return false;
     }
     

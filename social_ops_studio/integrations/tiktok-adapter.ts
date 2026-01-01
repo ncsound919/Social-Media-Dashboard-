@@ -120,12 +120,12 @@ export class TikTokAdapter extends SocialPlatformAdapter {
       return false;
     }
     
-    // Check if OAuth integration is available and authenticated
-    if (this.oauthIntegration && this.oauthIntegration.isAuthenticated()) {
-      return true;
+    if (!this.oauthIntegration) {
+      logger.warn('TikTok OAuth integration not available');
+      return false;
     }
-    
-    return true;
+
+    return this.oauthIntegration.isAuthenticated();
   }
 
   /**

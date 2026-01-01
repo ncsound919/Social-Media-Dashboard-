@@ -109,12 +109,12 @@ export class TwitterAdapter extends SocialPlatformAdapter {
       return false;
     }
     
-    // Check if OAuth integration is available and authenticated
-    if (this.oauthIntegration && this.oauthIntegration.isAuthenticated()) {
-      return true;
+    if (!this.oauthIntegration) {
+      logger.warn('Twitter OAuth integration not available');
+      return false;
     }
-    
-    return true;
+
+    return this.oauthIntegration.isAuthenticated();
   }
 
   /**

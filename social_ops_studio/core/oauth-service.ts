@@ -22,6 +22,7 @@ export interface OAuthState {
   codeChallenge: string;
   platform: string;
   redirectUri: string;
+  timestamp: number;
 }
 
 // Stored OAuth tokens
@@ -59,9 +60,17 @@ async function generateCodeChallenge(verifier: string): Promise<string> {
 /**
  * Base64 URL encode (without padding)
  * As per RFC 7636 Appendix A
+ * Uses chunking to avoid call stack size limits with large arrays
  */
 function base64URLEncode(buffer: Uint8Array): string {
-  const base64 = btoa(String.fromCharCode(...buffer));
+  // Convert Uint8Array to base64 using chunking to avoid stack overflow
+  let binary = '';
+  const chunkSize = 0x8000; // 32KB chunks
+  for (let i = 0; i < buffer.length; i += chunkSize) {
+    const chunk = buffer.subarray(i, Math.min(i + chunkSize, buffer.length));
+    binary += String.fromCharCode(...chunk);
+  }
+  const base64 = btoa(binary);
   return base64
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
@@ -80,14 +89,40 @@ function generateState(): string {
 export class OAuthService {
   private static instance: OAuthService;
   private pendingStates: Map<string, OAuthState> = new Map();
+  private stateCleanupInterval: NodeJS.Timeout | null = null;
+  private readonly STATE_TTL_MS = 600000; // 10 minutes
 
-  private constructor() {}
+  private constructor() {
+    // Start periodic cleanup of expired states
+    this.startStateCleanup();
+  }
 
   static getInstance(): OAuthService {
     if (!OAuthService.instance) {
       OAuthService.instance = new OAuthService();
     }
     return OAuthService.instance;
+  }
+
+  /**
+   * Start periodic cleanup of expired OAuth states
+   */
+  private startStateCleanup(): void {
+    if (this.stateCleanupInterval) {
+      return;
+    }
+    
+    // Clean up expired states every 5 minutes
+    this.stateCleanupInterval = setInterval(() => {
+      const now = Date.now();
+      for (const [state, oauthState] of this.pendingStates.entries()) {
+        // Check if state is expired (older than TTL)
+        if (now - oauthState.timestamp > this.STATE_TTL_MS) {
+          this.pendingStates.delete(state);
+          logger.info('Cleaned up expired OAuth state', { platform: oauthState.platform });
+        }
+      }
+    }, 300000); // Run every 5 minutes
   }
 
   /**
@@ -115,6 +150,7 @@ export class OAuthService {
       codeChallenge,
       platform,
       redirectUri,
+      timestamp: Date.now(),
     };
     this.pendingStates.set(state, oauthState);
 
@@ -144,7 +180,8 @@ export class OAuthService {
     state: string,
     tokenEndpoint: string,
     clientId: string,
-    clientSecret?: string
+    clientSecret?: string,
+    expectedPlatform?: string
   ): Promise<OAuthTokens> {
     logger.info('Exchanging authorization code for token');
 
@@ -152,6 +189,12 @@ export class OAuthService {
     const oauthState = this.pendingStates.get(state);
     if (!oauthState) {
       throw new Error('Invalid state parameter - possible CSRF attack');
+    }
+
+    // Verify platform matches if provided (additional safety check)
+    if (expectedPlatform && oauthState.platform !== expectedPlatform) {
+      this.pendingStates.delete(state);
+      throw new Error(`State parameter platform mismatch: expected ${expectedPlatform}, got ${oauthState.platform}`);
     }
 
     // Build token request
@@ -178,8 +221,8 @@ export class OAuthService {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Token exchange failed: ${response.status} - ${errorText}`);
+        // Don't expose detailed error response for security
+        throw new Error(`Token exchange failed with status ${response.status}`);
       }
 
       const tokenResponse: OAuthTokenResponse = await response.json();
@@ -241,8 +284,8 @@ export class OAuthService {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Token refresh failed: ${response.status} - ${errorText}`);
+        // Don't expose detailed error response for security
+        throw new Error(`Token refresh failed with status ${response.status}`);
       }
 
       const tokenResponse: OAuthTokenResponse = await response.json();

@@ -23,6 +23,7 @@ export class PlatformOAuthIntegration {
   private clientId: string;
   private clientSecret?: string;
   private tokens?: OAuthTokens;
+  private refreshPromise?: Promise<OAuthTokens>;
 
   constructor(config: PlatformOAuthConfig) {
     this.platform = config.platform;
@@ -68,7 +69,8 @@ export class PlatformOAuthIntegration {
       state,
       endpoints.tokenEndpoint,
       this.clientId,
-      this.clientSecret
+      this.clientSecret,
+      this.platform // Pass platform for additional validation
     );
 
     logger.info('OAuth tokens obtained', { platform: this.platform });
@@ -89,6 +91,12 @@ export class PlatformOAuthIntegration {
         throw new Error('Access token expired and no refresh token available');
       }
 
+      // If a refresh is already in progress, wait for it
+      if (this.refreshPromise) {
+        this.tokens = await this.refreshPromise;
+        return this.tokens.accessToken;
+      }
+
       logger.info('Access token expired, refreshing', { platform: this.platform });
       
       const endpoints = getOAuthEndpoints(this.platform);
@@ -96,12 +104,21 @@ export class PlatformOAuthIntegration {
         throw new Error(`OAuth endpoints not configured for platform: ${this.platform}`);
       }
 
-      this.tokens = await oauthService.refreshAccessToken(
+      // Start refresh and store promise to prevent concurrent refreshes
+      this.refreshPromise = oauthService.refreshAccessToken(
         this.tokens.refreshToken,
         endpoints.tokenEndpoint,
         this.clientId,
         this.clientSecret
       );
+
+      try {
+        this.tokens = await this.refreshPromise;
+        return this.tokens.accessToken;
+      } finally {
+        // Clear the promise after completion
+        this.refreshPromise = undefined;
+      }
     }
 
     return this.tokens.accessToken;
@@ -188,8 +205,8 @@ export function createPlatformOAuth(platform: Platform): PlatformOAuthIntegratio
       clientSecret = platformConfig.twitter.clientSecret;
       break;
     case 'facebook_pages':
-      clientId = platformConfig.facebook?.clientId;
-      clientSecret = platformConfig.facebook?.clientSecret;
+      clientId = platformConfig.facebook.clientId;
+      clientSecret = platformConfig.facebook.clientSecret;
       break;
     case 'instagram_business':
       clientId = platformConfig.instagram.clientId;
