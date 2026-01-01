@@ -1,0 +1,131 @@
+{
+  "dashboard_features_plan": {
+    "project": {
+      "name": "Social Ops Studio",
+      "features": [2, 3, 9, 14, 18, 20],
+      "platforms": ["Facebook", "Twitter/X", "Instagram", "TikTok"],
+      "total_effort_hours": 105,
+      "build_days": 5,
+      "tech_stack": "PyQt6 + SQLite + OAuth2 PKCE + keyring"
+    },
+    "database_schema": {
+      "new_tables": {
+        "PostQueue": {
+          "fields": ["id INTEGER PRIMARY KEY", "account_id INTEGER", "content TEXT", "media_paths JSON", "scheduled_time TIMESTAMP", "status TEXT", "platform TEXT", "post_id TEXT", "revenue_links JSON"],
+          "indexes": ["account_id", "scheduled_time", "status"]
+        },
+        "Campaign": {
+          "fields": ["id INTEGER PRIMARY KEY", "name TEXT", "blueprint_json TEXT", "account_ids JSON", "start_date DATE", "end_date DATE", "revenue_goal REAL", "posts JSON", "status TEXT"],
+          "indexes": ["account_ids"]
+        },
+        "RevenueLink": {
+          "fields": ["id INTEGER PRIMARY KEY", "post_queue_id INTEGER", "url TEXT", "utm_params JSON", "clicks INTEGER DEFAULT 0", "revenue REAL DEFAULT 0", "notes TEXT"],
+          "foreign_key": "PostQueue(id)"
+        },
+        "CollabShare": {
+          "fields": ["id INTEGER PRIMARY KEY", "share_token TEXT UNIQUE", "dashboard_view_json TEXT", "creator_account_id INTEGER", "expiry TIMESTAMP", "view_count INTEGER DEFAULT 0"],
+          "indexes": ["share_token", "expiry"]
+        },
+        "Backup": {
+          "fields": ["id INTEGER PRIMARY KEY", "timestamp TIMESTAMP", "type TEXT", "file_path TEXT", "size_bytes INTEGER", "checksum TEXT"],
+          "indexes": ["timestamp"]
+        }
+      },
+      "migration_sql": "PRAGMA foreign_keys=ON; CREATE TABLE IF NOT EXISTS PostQueue (...);"
+    },
+    "services": {
+      "QueueService": {
+        "files": ["services/queue_service.py"],
+        "methods": ["add_to_queue(account_id, content, scheduled)", "bulk_import(csv_file)", "check_and_post()", "pause_account(account_id)", "reorder_queue(ids_list)"],
+        "dependencies": ["oauth_poster", "sqlite3", "csv", "QTimer"]
+      },
+      "CalendarService": {
+        "files": ["services/calendar_service.py", "ui/calendar_view.py"],
+        "methods": ["get_calendar_data(start_date, end_date)", "drag_drop_post(post_id, new_time)", "get_conflicts(post_id)"],
+        "ui_components": ["QCalendarWidget", "QTimelineView", "PlatformColorCoder"]
+      },
+      "RevenueService": {
+        "files": ["services/revenue_service.py"],
+        "methods": ["add_link(post_id, url, utm)", "update_clicks(link_id, clicks)", "get_campaign_roi(campaign_id)", "export_report(format)"],
+        "charts": ["QChart revenue over time"]
+      },
+      "CampaignService": {
+        "files": ["services/campaign_service.py"],
+        "methods": ["create_from_blueprint(template_name)", "load_blueprint(name)", "save_blueprint(name, config)", "generate_queue(campaign_id)"],
+        "blueprint_examples": {
+          "product_launch": {"post_types": ["teaser", "reveal", "cta", "followup"], "cadence": "daily"},
+          "giveaway": {"duration_days": 7, "posts_per_day": 3}
+        }
+      },
+      "CollabService": {
+        "files": ["services/collab_service.py", "ui/share_viewer.py"],
+        "methods": ["generate_share_token(view_filter)", "validate_token(token)", "get_readonly_data(token)", "qr_code(token)"],
+        "security": ["Fernet encryption", "24h expiry"]
+      },
+      "BackupService": {
+        "files": ["services/backup_service.py"],
+        "methods": ["full_backup()", "incremental_backup(changed_since)", "restore(path)", "auto_backup_schedule(hours)"],
+        "formats": ["sqlite_dump", "json_export", "zip_archive"]
+      }
+    },
+    "ui_components": {
+      "new_tabs": ["Queue", "Calendar", "Campaigns", "Revenue", "Shares", "Backup"],
+      "glassmorphic_style": {
+        "bg": "rgba(15,15,25,0.9)",
+        "border": "1px solid rgba(0,255,150,0.3)",
+        "glass_effect": "backdrop-filter: blur(20px)",
+        "neon_glow": "box-shadow: 0 0 20px rgba(0,255,150,0.5)"
+      },
+      "status_badges": {
+        "queued": "🟡 Queued",
+        "posted": "🟢 Posted", 
+        "failed": "🔴 Failed"
+      }
+    },
+    "build_sequence": [
+      {
+        "phase": 1,
+        "name": "Prep & Core Plumbing",
+        "features": ["DB migration"],
+        "hours": 2,
+        "files": ["models.py", "migration.sql"]
+      },
+      {
+        "phase": 2,
+        "name": "Queue + Backup MVP",
+        "features": [3, 20],
+        "hours": 14,
+        "order": ["queue_service.py", "backup_service.py", "ui/queue_tab.py"]
+      },
+      {
+        "phase": 3,
+        "name": "Calendar + Revenue",
+        "features": [2, 9],
+        "hours": 24,
+        "order": ["calendar_service.py", "revenue_service.py", "ui/calendar_tab.py"]
+      },
+      {
+        "phase": 4,
+        "name": "Campaigns + Collab",
+        "features": [14, 18],
+        "hours": 45,
+        "order": ["campaign_service.py", "collab_service.py", "ui/campaigns_tab.py"]
+      },
+      {
+        "phase": 5,
+        "name": "Integration & Polish",
+        "hours": 18,
+        "tasks": ["Cross-feature wiring", "Neon UI", "OAuth error handling", "Platform tests"]
+      }
+    ],
+    "copilot_prompts": {
+      "queue_service": "Create PyQt6 QueueService class with SQLite PostQueue model. Methods: add_to_queue, bulk_import CSV, check_and_post via OAuth, pause/resume. Use QTimer. Dark neon style.",
+      "starter_command": "Drop this JSON as FEATURES_PLAN.json. For each service in build_sequence, copy the copilot_prompts entry as comment block above the file creation prompt."
+    },
+    "success_metrics": {
+      "mvp_complete": "All 6 features working end-to-end with sample data",
+      "daily_value": "Save 2+ hours manual posting/scheduling",
+      "test_cases": ["Bulk import 50 posts", "Drag-drop reschedule", "Campaign generates queue", "Share view loads readonly"]
+    }
+  }
+}
