@@ -188,8 +188,8 @@ export function createPlatformOAuth(platform: Platform): PlatformOAuthIntegratio
       clientSecret = platformConfig.twitter.clientSecret;
       break;
     case 'facebook_pages':
-      clientId = platformConfig.facebook?.clientId;
-      clientSecret = platformConfig.facebook?.clientSecret;
+      clientId = platformConfig.facebook.clientId;
+      clientSecret = platformConfig.facebook.clientSecret;
       break;
     case 'instagram_business':
       clientId = platformConfig.instagram.clientId;
@@ -202,6 +202,14 @@ export function createPlatformOAuth(platform: Platform): PlatformOAuthIntegratio
     case 'youtube':
       clientId = platformConfig.youtube.clientId;
       clientSecret = platformConfig.youtube.clientSecret;
+      break;
+    case 'linkedin_pages':
+      clientId = platformConfig.linkedin.clientId;
+      clientSecret = platformConfig.linkedin.clientSecret;
+      break;
+    case 'pinterest':
+      clientId = platformConfig.pinterest.clientId;
+      clientSecret = platformConfig.pinterest.clientSecret;
       break;
     default:
       logger.warn('OAuth not configured for platform', { platform });

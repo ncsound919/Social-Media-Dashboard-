@@ -105,10 +105,18 @@ export function getOAuthEndpoints(platform: Platform): PlatformOAuthEndpoints | 
  * In production, this should match the registered redirect URI in the OAuth app
  */
 export function getRedirectUri(): string {
-  // For local development
+  // Check for environment variable first (recommended for production)
+  const envRedirectUri = process.env.OAUTH_REDIRECT_URI || process.env.NEXT_PUBLIC_APP_URL;
+  if (envRedirectUri) {
+    return `${envRedirectUri}/api/oauth/callback`;
+  }
+  
+  // For client-side development
   if (typeof window !== 'undefined') {
     const origin = window.location.origin;
     return `${origin}/api/oauth/callback`;
   }
+  
+  // Fallback for local development
   return 'http://localhost:3000/api/oauth/callback';
 }

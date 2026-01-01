@@ -202,7 +202,7 @@ if (code && state) {
 - `social_ops_studio/integrations/facebook-adapter.ts` (139 lines)
 - `social_ops_studio/OAUTH_SETUP.md` (331 lines)
 
-**Modified (7 files):**
+**Modified (9 files):**
 - `social_ops_studio/core/config.ts` - Added Facebook config
 - `social_ops_studio/core/index.ts` - Exported new modules
 - `social_ops_studio/integrations/base-adapter.ts` - Added OAuth methods

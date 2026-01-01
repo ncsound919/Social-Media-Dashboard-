@@ -22,6 +22,7 @@ export interface OAuthState {
   codeChallenge: string;
   platform: string;
   redirectUri: string;
+  createdAt: number; // Timestamp for TTL cleanup
 }
 
 // Stored OAuth tokens
@@ -34,6 +35,9 @@ export interface OAuthTokens {
 
 // Default buffer time before token expiration to trigger refresh (5 minutes)
 const DEFAULT_TOKEN_REFRESH_BUFFER_SECONDS = 300;
+
+// TTL for pending OAuth states (10 minutes)
+const PENDING_STATE_TTL_MS = 10 * 60 * 1000;
 
 /**
  * Generate a cryptographically random string for code verifier
@@ -80,14 +84,57 @@ function generateState(): string {
 export class OAuthService {
   private static instance: OAuthService;
   private pendingStates: Map<string, OAuthState> = new Map();
+  private cleanupInterval: NodeJS.Timeout | null = null;
 
-  private constructor() {}
+  private constructor() {
+    // Start periodic cleanup of expired states
+    this.startCleanupInterval();
+  }
 
   static getInstance(): OAuthService {
     if (!OAuthService.instance) {
       OAuthService.instance = new OAuthService();
     }
     return OAuthService.instance;
+  }
+
+  /**
+   * Clean up expired OAuth states to prevent memory leaks
+   */
+  private cleanupExpiredStates(): void {
+    const now = Date.now();
+    const expiredStates: string[] = [];
+    
+    for (const [state, oauthState] of this.pendingStates.entries()) {
+      if (now - oauthState.createdAt > PENDING_STATE_TTL_MS) {
+        expiredStates.push(state);
+      }
+    }
+    
+    for (const state of expiredStates) {
+      this.pendingStates.delete(state);
+      logger.debug('Cleaned up expired OAuth state', { state });
+    }
+  }
+
+  /**
+   * Start interval to periodically clean up expired states
+   */
+  private startCleanupInterval(): void {
+    // Run cleanup every 5 minutes
+    this.cleanupInterval = setInterval(() => {
+      this.cleanupExpiredStates();
+    }, 5 * 60 * 1000);
+  }
+
+  /**
+   * Stop cleanup interval (for testing or shutdown)
+   */
+  stopCleanupInterval(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
   }
 
   /**
@@ -115,6 +162,7 @@ export class OAuthService {
       codeChallenge,
       platform,
       redirectUri,
+      createdAt: Date.now(),
     };
     this.pendingStates.set(state, oauthState);
 

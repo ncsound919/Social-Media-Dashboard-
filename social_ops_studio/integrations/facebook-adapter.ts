@@ -80,7 +80,7 @@ export class FacebookAdapter extends SocialPlatformAdapter {
     try {
       // Facebook supports images and videos
       const supportedFormats = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/mov'];
-      if (!supportedFormats.some(format => mimeType.startsWith(format.split('/')[0]))) {
+      if (!supportedFormats.includes(mimeType)) {
         return {
           success: false,
           mediaId: null,

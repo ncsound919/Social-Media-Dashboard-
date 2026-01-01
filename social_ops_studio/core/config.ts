@@ -33,6 +33,14 @@ export interface PlatformConfig {
     clientId: string | undefined;
     clientSecret: string | undefined;
   };
+  linkedin: {
+    clientId: string | undefined;
+    clientSecret: string | undefined;
+  };
+  pinterest: {
+    clientId: string | undefined;
+    clientSecret: string | undefined;
+  };
 }
 
 // Theme configuration matching the style guide
@@ -79,6 +87,14 @@ export function loadPlatformConfig(): PlatformConfig {
     youtube: {
       clientId: process.env.YOUTUBE_CLIENT_ID,
       clientSecret: process.env.YOUTUBE_CLIENT_SECRET,
+    },
+    linkedin: {
+      clientId: process.env.LINKEDIN_CLIENT_ID,
+      clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+    },
+    pinterest: {
+      clientId: process.env.PINTEREST_CLIENT_ID,
+      clientSecret: process.env.PINTEREST_CLIENT_SECRET,
     },
   };
 }

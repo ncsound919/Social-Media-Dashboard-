@@ -122,8 +122,8 @@ export class InstagramAdapter extends SocialPlatformAdapter {
     }
     
     // Check if OAuth integration is available and authenticated
-    if (this.oauthIntegration && this.oauthIntegration.isAuthenticated()) {
-      return true;
+    if (this.oauthIntegration) {
+      return this.oauthIntegration.isAuthenticated();
     }
     
     return true;
