@@ -112,14 +112,16 @@ export class FacebookAdapter extends SocialPlatformAdapter {
       logger.warn('Facebook credentials not configured');
       return false;
     }
-    
-    // Check if OAuth integration is available and authenticated
-    if (this.oauthIntegration && this.oauthIntegration.isAuthenticated()) {
+
+    // If no OAuth integration is configured, fall back to treating the
+    // connection as valid to match behavior of other platform adapters.
+    if (!this.oauthIntegration) {
+      logger.warn('OAuth integration not available for Facebook; skipping connection validation');
       return true;
     }
-    
-    // No authenticated OAuth integration available; connection is not valid
-    return false;
+
+    // When an OAuth integration is present, require it to be authenticated.
+    return this.oauthIntegration.isAuthenticated();
   }
 
   /**
