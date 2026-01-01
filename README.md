@@ -30,6 +30,18 @@ The dashboard now includes best-in-class features inspired by leading social med
 
 See [PLATFORM_FEATURES.md](PLATFORM_FEATURES.md) for detailed documentation on all platform features.
 
+### Social Ops Studio - OAuth 2.0 Integration
+
+The Social Ops Studio (TypeScript/Next.js application in `social_ops_studio/`) now supports **OAuth 2.0 with PKCE** for secure authentication with social media platforms:
+
+- **Twitter/X** - Full OAuth 2.0 with PKCE support
+- **Facebook Pages** - OAuth 2.0 integration
+- **Instagram Business** - OAuth 2.0 via Meta platform
+- **TikTok** - OAuth 2.0 with PKCE support
+- **YouTube, LinkedIn, Pinterest** - OAuth 2.0 ready
+
+See [social_ops_studio/OAUTH_SETUP.md](social_ops_studio/OAUTH_SETUP.md) for detailed OAuth configuration and setup instructions.
+
 ## Quick start
 
 1. Create a virtual environment (optional) and install dependencies:

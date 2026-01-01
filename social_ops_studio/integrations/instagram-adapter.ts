@@ -13,6 +13,7 @@ import {
 } from './base-adapter';
 import { Platform } from '@/data/models';
 import { platformConfig } from '@/core/config';
+import { createPlatformOAuth, PlatformOAuthIntegration } from '@/core/platform-oauth-integration';
 import { logger } from '@/utils/logging';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -24,11 +25,13 @@ export class InstagramAdapter extends SocialPlatformAdapter {
 
   private clientId: string | undefined;
   private clientSecret: string | undefined;
+  private oauthIntegration: PlatformOAuthIntegration | null;
 
   constructor() {
     super();
     this.clientId = platformConfig.instagram.clientId;
     this.clientSecret = platformConfig.instagram.clientSecret;
+    this.oauthIntegration = createPlatformOAuth(this.platform);
   }
 
   async publishPost(content: PostContent): Promise<PublishResult> {
@@ -117,6 +120,53 @@ export class InstagramAdapter extends SocialPlatformAdapter {
       logger.warn('Instagram credentials not configured');
       return false;
     }
-    return true;
+    
+    // Check if OAuth integration is available and authenticated
+    if (!this.oauthIntegration) {
+      logger.warn('OAuth integration not initialized for Instagram');
+      return false;
+    }
+
+    const isAuthenticated = this.oauthIntegration.isAuthenticated();
+    if (!isAuthenticated) {
+      logger.warn('Instagram OAuth integration is not authenticated');
+    }
+    return isAuthenticated;
+  }
+
+  /**
+   * Start OAuth authorization flow
+   */
+  async startOAuthFlow(): Promise<string | null> {
+    if (!this.oauthIntegration) {
+      logger.error('OAuth integration not available for Instagram');
+      return null;
+    }
+    
+    try {
+      return await this.oauthIntegration.authorize();
+    } catch (error) {
+      logger.error('Failed to start OAuth flow', { error });
+      return null;
+    }
+  }
+
+  /**
+   * Complete OAuth authorization with callback code
+   */
+  async completeOAuthFlow(code: string, state: string): Promise<boolean> {
+    if (!this.oauthIntegration) {
+      logger.error('OAuth integration not available for Instagram');
+      return false;
+    }
+    
+    try {
+      await this.oauthIntegration.handleCallback(code, state);
+      logger.info('OAuth flow completed successfully for Instagram');
+      return true;
+    } catch (error) {
+      logger.error('Failed to complete OAuth flow', { error });
+      return false;
+    }
   }
 }

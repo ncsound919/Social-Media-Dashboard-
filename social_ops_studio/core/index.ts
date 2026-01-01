@@ -2,6 +2,9 @@
  * Core module exports
  */
 export * from './config';
+export * from './oauth-service';
+export * from './platform-oauth-config';
+export * from './platform-oauth-integration';
 export * from './analytics-engine';
 export * from './content-pipeline';
 export * from './scheduling-engine';
