@@ -13,6 +13,7 @@ import {
 } from './base-adapter';
 import { Platform } from '@/data/models';
 import { platformConfig } from '@/core/config';
+import { createPlatformOAuth, PlatformOAuthIntegration } from '@/core/platform-oauth-integration';
 import { logger } from '@/utils/logging';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -24,11 +25,13 @@ export class TwitterAdapter extends SocialPlatformAdapter {
 
   private clientId: string | undefined;
   private clientSecret: string | undefined;
+  private oauthIntegration: PlatformOAuthIntegration | null;
 
   constructor() {
     super();
     this.clientId = platformConfig.twitter.clientId;
     this.clientSecret = platformConfig.twitter.clientSecret;
+    this.oauthIntegration = createPlatformOAuth(this.platform);
   }
 
   async publishPost(content: PostContent): Promise<PublishResult> {
@@ -105,7 +108,50 @@ export class TwitterAdapter extends SocialPlatformAdapter {
       logger.warn('Twitter credentials not configured');
       return false;
     }
-    return true;
+    
+    if (!this.oauthIntegration) {
+      logger.warn('Twitter OAuth integration not available');
+      return false;
+    }
+
+    return this.oauthIntegration.isAuthenticated();
+  }
+
+  /**
+   * Start OAuth authorization flow
+   * Returns the authorization URL to redirect the user to
+   */
+  async startOAuthFlow(): Promise<string | null> {
+    if (!this.oauthIntegration) {
+      logger.error('OAuth integration not available for Twitter');
+      return null;
+    }
+    
+    try {
+      return await this.oauthIntegration.authorize();
+    } catch (error) {
+      logger.error('Failed to start OAuth flow', { error });
+      return null;
+    }
+  }
+
+  /**
+   * Complete OAuth authorization with callback code
+   */
+  async completeOAuthFlow(code: string, state: string): Promise<boolean> {
+    if (!this.oauthIntegration) {
+      logger.error('OAuth integration not available for Twitter');
+      return false;
+    }
+    
+    try {
+      await this.oauthIntegration.handleCallback(code, state);
+      logger.info('OAuth flow completed successfully for Twitter');
+      return true;
+    } catch (error) {
+      logger.error('Failed to complete OAuth flow', { error });
+      return false;
+    }
   }
 
   async deletePost(remoteId: string): Promise<boolean> {
