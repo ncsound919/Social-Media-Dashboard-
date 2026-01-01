@@ -12,6 +12,9 @@ export interface PlatformOAuthEndpoints {
   scopes: string[];
 }
 
+// Facebook/Meta Graph API version
+const META_API_VERSION = 'v18.0';
+
 /**
  * OAuth 2.0 configuration for each platform
  * All platforms support OAuth 2.0 with PKCE
@@ -29,8 +32,8 @@ export const platformOAuthEndpoints: Record<string, PlatformOAuthEndpoints> = {
     ],
   },
   facebook_pages: {
-    authorizationEndpoint: 'https://www.facebook.com/v18.0/dialog/oauth',
-    tokenEndpoint: 'https://graph.facebook.com/v18.0/oauth/access_token',
+    authorizationEndpoint: `https://www.facebook.com/${META_API_VERSION}/dialog/oauth`,
+    tokenEndpoint: `https://graph.facebook.com/${META_API_VERSION}/oauth/access_token`,
     scopes: [
       'pages_show_list',
       'pages_read_engagement',
@@ -41,8 +44,8 @@ export const platformOAuthEndpoints: Record<string, PlatformOAuthEndpoints> = {
   },
   instagram_business: {
     // Instagram uses Facebook OAuth (Meta)
-    authorizationEndpoint: 'https://www.facebook.com/v18.0/dialog/oauth',
-    tokenEndpoint: 'https://graph.facebook.com/v18.0/oauth/access_token',
+    authorizationEndpoint: `https://www.facebook.com/${META_API_VERSION}/dialog/oauth`,
+    tokenEndpoint: `https://graph.facebook.com/${META_API_VERSION}/oauth/access_token`,
     scopes: [
       'instagram_basic',
       'instagram_content_publish',
@@ -51,7 +54,7 @@ export const platformOAuthEndpoints: Record<string, PlatformOAuthEndpoints> = {
     ],
   },
   tiktok: {
-    authorizationEndpoint: 'https://www.tiktok.com/v2/auth/authorize',
+    authorizationEndpoint: 'https://www.tiktok.com/auth/authorize/',
     tokenEndpoint: 'https://open.tiktokapis.com/v2/oauth/token/',
     revocationEndpoint: 'https://open.tiktokapis.com/v2/oauth/revoke/',
     scopes: [
@@ -75,8 +78,8 @@ export const platformOAuthEndpoints: Record<string, PlatformOAuthEndpoints> = {
     authorizationEndpoint: 'https://www.linkedin.com/oauth/v2/authorization',
     tokenEndpoint: 'https://www.linkedin.com/oauth/v2/accessToken',
     scopes: [
-      'r_liteprofile',
-      'r_emailaddress',
+      'profile',
+      'email',
       'w_member_social',
       'rw_organization_admin',
     ],
@@ -105,18 +108,10 @@ export function getOAuthEndpoints(platform: Platform): PlatformOAuthEndpoints | 
  * In production, this should match the registered redirect URI in the OAuth app
  */
 export function getRedirectUri(): string {
-  // Check for environment variable first (recommended for production)
-  const envRedirectUri = process.env.OAUTH_REDIRECT_URI || process.env.NEXT_PUBLIC_APP_URL;
-  if (envRedirectUri) {
-    return `${envRedirectUri}/api/oauth/callback`;
-  }
-  
-  // For client-side development
+  // For local development
   if (typeof window !== 'undefined') {
     const origin = window.location.origin;
     return `${origin}/api/oauth/callback`;
   }
-  
-  // Fallback for local development
   return 'http://localhost:3000/api/oauth/callback';
 }

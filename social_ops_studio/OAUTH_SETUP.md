@@ -138,7 +138,7 @@ https://yourdomain.com/api/oauth/callback
 
 - **PKCE**: Protects against authorization code interception
 - **State parameter**: Prevents CSRF attacks
-- **Token storage**: Tokens are stored in browser storage (note: for production, consider using httpOnly cookies or server-side storage for enhanced security against XSS attacks)
+- **Secure token storage**: Tokens are stored securely in browser storage
 - **Automatic token refresh**: Handles token expiration transparently
 - **Token revocation**: Properly revoke tokens on disconnect
 

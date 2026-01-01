@@ -122,11 +122,52 @@ export class InstagramAdapter extends SocialPlatformAdapter {
     }
     
     // Check if OAuth integration is available and authenticated
-    if (this.oauthIntegration) {
-      return this.oauthIntegration.isAuthenticated();
+    if (!this.oauthIntegration) {
+      logger.warn('OAuth integration not initialized for Instagram');
+      return false;
+    }
+
+    const isAuthenticated = this.oauthIntegration.isAuthenticated();
+    if (!isAuthenticated) {
+      logger.warn('Instagram OAuth integration is not authenticated');
+    }
+    return isAuthenticated;
+  }
+
+  /**
+   * Start OAuth authorization flow
+   */
+  async startOAuthFlow(): Promise<string | null> {
+    if (!this.oauthIntegration) {
+      logger.error('OAuth integration not available for Instagram');
+      return null;
     }
     
-    return true;
+    try {
+      return await this.oauthIntegration.authorize();
+    } catch (error) {
+      logger.error('Failed to start OAuth flow', { error });
+      return null;
+    }
+  }
+
+  /**
+   * Complete OAuth authorization with callback code
+   */
+  async completeOAuthFlow(code: string, state: string): Promise<boolean> {
+    if (!this.oauthIntegration) {
+      logger.error('OAuth integration not available for Instagram');
+      return false;
+    }
+    
+    try {
+      await this.oauthIntegration.handleCallback(code, state);
+      logger.info('OAuth flow completed successfully for Instagram');
+      return true;
+    } catch (error) {
+      logger.error('Failed to complete OAuth flow', { error });
+      return false;
+    }
   }
 
   /**
