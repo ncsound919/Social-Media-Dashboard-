@@ -14,7 +14,8 @@ import {
   MessageSquare,
   Share2,
   Clock,
-  CheckCircle
+  CheckCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { formatRelativeDate } from '@/utils/timeutils';
 import { subDays, format } from 'date-fns';
@@ -86,7 +87,7 @@ const mockUpcomingPosts: UpcomingPost[] = [
 
 interface ActivityItem {
   id: string;
-  type: 'post' | 'metric' | 'comment' | 'milestone';
+  type: 'post' | 'metric' | 'comment' | 'milestone' | 'alert';
   message: string;
   timestamp: Date;
 }
@@ -139,6 +140,123 @@ const readinessChecklist: ReadinessItem[] = [
   },
 ];
 
+interface AiAssessment {
+  score: number;
+  priorities: Array<{
+    title: string;
+    detail: string;
+    impact: 'High' | 'Medium';
+  }>;
+}
+
+const ENGAGEMENT_RATE_MULTIPLIER = 12;
+const PLATFORM_COUNT_MULTIPLIER = 6;
+const READINESS_PROGRESS_MULTIPLIER = 0.7;
+const SCHEDULED_POST_MULTIPLIER = 5;
+const MIN_ENGAGEMENT_RATE_THRESHOLD = 6;
+const MIN_POSTS_PER_PLATFORM = 2;
+const MIN_POSTS_FOR_24H_COVERAGE = 5;
+const MAX_ACTIVITY_ITEMS = 6;
+const ENGAGEMENT_ALERT_AGE_MS = 10 * 60 * 1000;
+const COVERAGE_ALERT_AGE_MS = 20 * 60 * 1000;
+const PLATFORM_BALANCE_ALERT_AGE_MS = 40 * 60 * 1000;
+
+function generateAiAssessment(input: {
+  readinessProgress: number;
+  engagementRate: number;
+  postsScheduled: number;
+  activePlatforms: number;
+}): AiAssessment {
+  const performanceScore = Math.min(
+    100,
+    Math.max(
+      0,
+      Math.round(input.engagementRate * ENGAGEMENT_RATE_MULTIPLIER + input.activePlatforms * PLATFORM_COUNT_MULTIPLIER)
+    )
+  );
+  const executionScore = Math.min(
+    100,
+    Math.max(
+      0,
+      Math.round(input.readinessProgress * READINESS_PROGRESS_MULTIPLIER + input.postsScheduled * SCHEDULED_POST_MULTIPLIER)
+    )
+  );
+  const score = Math.round((performanceScore + executionScore) / 2);
+
+  const priorities: AiAssessment['priorities'] = [];
+  if (input.postsScheduled < input.activePlatforms * MIN_POSTS_PER_PLATFORM) {
+    priorities.push({
+      title: 'Increase scheduling coverage',
+      detail: 'Aim for two queued posts per platform to keep delivery resilient across channels.',
+      impact: 'High',
+    });
+  }
+  if (input.engagementRate < MIN_ENGAGEMENT_RATE_THRESHOLD) {
+    priorities.push({
+      title: 'Improve creative experimentation',
+      detail: 'Run weekly A/B creative tests on top-performing platforms to lift engagement quality.',
+      impact: 'High',
+    });
+  }
+  priorities.push(
+    input.readinessProgress < 100
+      ? {
+          title: 'Strengthen desktop operating rhythm',
+          detail: 'Use Morning Brief + keyboard shortcuts daily to speed planning and reduce context switching.',
+          impact: 'Medium',
+        }
+      : {
+          title: 'Maintain desktop operating rhythm',
+          detail: 'Keep the team aligned with Morning Brief check-ins to preserve execution quality.',
+          impact: 'Medium',
+        }
+  );
+
+  return { score, priorities: priorities.slice(0, 3) };
+}
+
+function generateAiPerformanceAlerts(input: {
+  engagementRate: number;
+  postsScheduled: number;
+  activePlatforms: number;
+}): ActivityItem[] {
+  const alerts: ActivityItem[] = [];
+  const contentBufferThin = input.postsScheduled < MIN_POSTS_FOR_24H_COVERAGE;
+
+  if (input.engagementRate < MIN_ENGAGEMENT_RATE_THRESHOLD) {
+    alerts.push({
+      id: 'alert-engagement',
+      type: 'alert',
+      message: 'AI Risk Radar: Engagement is below benchmark. Trigger 2 A/B variants for this week.',
+      timestamp: new Date(Date.now() - ENGAGEMENT_ALERT_AGE_MS),
+    });
+  }
+
+  if (contentBufferThin) {
+    alerts.push({
+      id: 'alert-coverage',
+      type: 'alert',
+      message: `AI Risk Radar: Content buffer is thin. Queue at least ${MIN_POSTS_FOR_24H_COVERAGE} posts to protect 24h coverage.`,
+      timestamp: new Date(Date.now() - COVERAGE_ALERT_AGE_MS),
+    });
+  }
+
+  if (
+    !contentBufferThin &&
+    input.activePlatforms > 0 &&
+    input.postsScheduled < input.activePlatforms * MIN_POSTS_PER_PLATFORM
+  ) {
+    alerts.push({
+      id: 'alert-platform-balance',
+      type: 'alert',
+      message: `AI Risk Radar: Platform mix is imbalanced. Add ${MIN_POSTS_PER_PLATFORM} scheduled posts per active channel.`,
+      timestamp: new Date(Date.now() - PLATFORM_BALANCE_ALERT_AGE_MS),
+    });
+  }
+
+  return alerts;
+}
+
 export function DashboardOverview() {
   const { accounts, scheduledPosts } = useAppStore();
   const [engagementData] = useState(generateMockEngagementData(30));
@@ -156,6 +274,18 @@ export function DashboardOverview() {
   const totalEngagements = 46500;
   const activePlatforms = accounts.length || 5;
   const avgPostingFrequency = 2.3;
+  const aiAssessment = generateAiAssessment({
+    readinessProgress,
+    engagementRate,
+    postsScheduled,
+    activePlatforms,
+  });
+  const aiPerformanceAlerts = generateAiPerformanceAlerts({
+    engagementRate,
+    postsScheduled,
+    activePlatforms,
+  });
+  const activityFeed = [...aiPerformanceAlerts, ...mockActivityFeed].slice(0, MAX_ACTIVITY_ITEMS);
 
   const heroMetrics = [
     { 
@@ -272,22 +402,39 @@ export function DashboardOverview() {
         <div className="glass-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Recent Activity</h3>
-            <button className="text-sm text-accent-cyan hover:underline">
-              View All
-            </button>
+            <div className="flex items-center gap-3">
+              {aiPerformanceAlerts.length > 0 && (
+                <span
+                  className="text-[11px] px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-300 font-semibold"
+                  aria-label={`${aiPerformanceAlerts.length} AI performance alerts`}
+                >
+                  {aiPerformanceAlerts.length} AI Alert{aiPerformanceAlerts.length > 1 ? 's' : ''}
+                </span>
+              )}
+              <button className="text-sm text-accent-cyan hover:underline">
+                View All
+              </button>
+            </div>
           </div>
           <div className="space-y-3">
-            {mockActivityFeed.map((activity) => (
+            {activityFeed.map((activity) => (
               <div 
                 key={activity.id}
                 className="flex items-start gap-3 p-3 rounded-lg hover:bg-background/50 transition-colors"
               >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  activity.type === 'alert' ? 'bg-yellow-500/20 text-yellow-300' :
                   activity.type === 'milestone' ? 'bg-accent-pink/20 text-accent-pink' :
                   activity.type === 'post' ? 'bg-accent-cyan/20 text-accent-cyan' :
                   activity.type === 'comment' ? 'bg-accent-purple/20 text-accent-purple' :
                   'bg-green-500/20 text-green-400'
                 }`}>
+                  {activity.type === 'alert' && (
+                    <>
+                      <AlertTriangle size={14} aria-hidden="true" />
+                      <span className="sr-only">AI alert</span>
+                    </>
+                  )}
                   {activity.type === 'milestone' && '🎉'}
                   {activity.type === 'post' && <Calendar size={14} />}
                   {activity.type === 'comment' && <MessageSquare size={14} />}
@@ -367,6 +514,37 @@ export function DashboardOverview() {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      <div className="glass-card p-5">
+        <div className="flex items-start justify-between mb-4 gap-4">
+          <div>
+            <h3 className="text-lg font-semibold">AI Command Center Assessment</h3>
+            <p className="text-sm text-text-secondary">
+              Real-time operating score and next best actions to mature this into an enterprise-grade desktop workflow.
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-3xl font-bold text-accent-purple">{aiAssessment.score}</p>
+            <p className="text-xs text-text-tertiary">AI score / 100</p>
+          </div>
+        </div>
+        <div className="space-y-2" role="list">
+          {aiAssessment.priorities.map((priority) => (
+            <div key={priority.title} className="rounded-lg bg-background/50 border border-white/5 p-3" role="listitem">
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-medium">{priority.title}</p>
+                <span className={clsx(
+                  'text-[11px] px-2 py-1 rounded-full font-semibold',
+                  priority.impact === 'High' ? 'bg-accent-cyan/20 text-accent-cyan' : 'bg-accent-purple/20 text-accent-purple'
+                )}>
+                  {priority.impact} impact
+                </span>
+              </div>
+              <p className="text-xs text-text-secondary mt-1">{priority.detail}</p>
+            </div>
+          ))}
         </div>
       </div>
 
