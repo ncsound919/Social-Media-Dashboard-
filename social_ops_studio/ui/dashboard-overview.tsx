@@ -139,6 +139,76 @@ const readinessChecklist: ReadinessItem[] = [
   },
 ];
 
+interface AiAssessment {
+  score: number;
+  priorities: Array<{
+    title: string;
+    detail: string;
+    impact: 'High' | 'Medium';
+  }>;
+}
+
+const ENGAGEMENT_RATE_MULTIPLIER = 12;
+const PLATFORM_COUNT_MULTIPLIER = 6;
+const READINESS_PROGRESS_MULTIPLIER = 0.7;
+const SCHEDULED_POST_MULTIPLIER = 5;
+const MIN_ENGAGEMENT_RATE_THRESHOLD = 6;
+const MIN_POSTS_PER_PLATFORM = 2;
+
+function generateAiAssessment(input: {
+  readinessProgress: number;
+  engagementRate: number;
+  postsScheduled: number;
+  activePlatforms: number;
+}): AiAssessment {
+  const performanceScore = Math.min(
+    100,
+    Math.max(
+      0,
+      Math.round(input.engagementRate * ENGAGEMENT_RATE_MULTIPLIER + input.activePlatforms * PLATFORM_COUNT_MULTIPLIER)
+    )
+  );
+  const executionScore = Math.min(
+    100,
+    Math.max(
+      0,
+      Math.round(input.readinessProgress * READINESS_PROGRESS_MULTIPLIER + input.postsScheduled * SCHEDULED_POST_MULTIPLIER)
+    )
+  );
+  const score = Math.round((performanceScore + executionScore) / 2);
+
+  const priorities: AiAssessment['priorities'] = [];
+  if (input.postsScheduled < input.activePlatforms * MIN_POSTS_PER_PLATFORM) {
+    priorities.push({
+      title: 'Increase scheduling coverage',
+      detail: 'Aim for two queued posts per platform to keep delivery resilient across channels.',
+      impact: 'High',
+    });
+  }
+  if (input.engagementRate < MIN_ENGAGEMENT_RATE_THRESHOLD) {
+    priorities.push({
+      title: 'Improve creative experimentation',
+      detail: 'Run weekly A/B creative tests on top-performing platforms to lift engagement quality.',
+      impact: 'High',
+    });
+  }
+  priorities.push(
+    input.readinessProgress < 100
+      ? {
+          title: 'Strengthen desktop operating rhythm',
+          detail: 'Use Morning Brief + keyboard shortcuts daily to speed planning and reduce context switching.',
+          impact: 'Medium',
+        }
+      : {
+          title: 'Maintain desktop operating rhythm',
+          detail: 'Keep the team aligned with Morning Brief check-ins to preserve execution quality.',
+          impact: 'Medium',
+        }
+  );
+
+  return { score, priorities: priorities.slice(0, 3) };
+}
+
 export function DashboardOverview() {
   const { accounts, scheduledPosts } = useAppStore();
   const [engagementData] = useState(generateMockEngagementData(30));
@@ -156,6 +226,12 @@ export function DashboardOverview() {
   const totalEngagements = 46500;
   const activePlatforms = accounts.length || 5;
   const avgPostingFrequency = 2.3;
+  const aiAssessment = generateAiAssessment({
+    readinessProgress,
+    engagementRate,
+    postsScheduled,
+    activePlatforms,
+  });
 
   const heroMetrics = [
     { 
@@ -367,6 +443,37 @@ export function DashboardOverview() {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      <div className="glass-card p-5">
+        <div className="flex items-start justify-between mb-4 gap-4">
+          <div>
+            <h3 className="text-lg font-semibold">AI Command Center Assessment</h3>
+            <p className="text-sm text-text-secondary">
+              Real-time operating score and next best actions to mature this into an enterprise-grade desktop workflow.
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-3xl font-bold text-accent-purple">{aiAssessment.score}</p>
+            <p className="text-xs text-text-tertiary">AI score / 100</p>
+          </div>
+        </div>
+        <div className="space-y-2" role="list">
+          {aiAssessment.priorities.map((priority) => (
+            <div key={priority.title} className="rounded-lg bg-background/50 border border-white/5 p-3" role="listitem">
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-medium">{priority.title}</p>
+                <span className={clsx(
+                  'text-[11px] px-2 py-1 rounded-full font-semibold',
+                  priority.impact === 'High' ? 'bg-accent-cyan/20 text-accent-cyan' : 'bg-accent-purple/20 text-accent-purple'
+                )}>
+                  {priority.impact} impact
+                </span>
+              </div>
+              <p className="text-xs text-text-secondary mt-1">{priority.detail}</p>
+            </div>
+          ))}
         </div>
       </div>
 
