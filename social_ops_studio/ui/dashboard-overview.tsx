@@ -14,7 +14,8 @@ import {
   MessageSquare,
   Share2,
   Clock,
-  CheckCircle
+  CheckCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { formatRelativeDate } from '@/utils/timeutils';
 import { subDays, format } from 'date-fns';
@@ -86,7 +87,7 @@ const mockUpcomingPosts: UpcomingPost[] = [
 
 interface ActivityItem {
   id: string;
-  type: 'post' | 'metric' | 'comment' | 'milestone';
+  type: 'post' | 'metric' | 'comment' | 'milestone' | 'alert';
   message: string;
   timestamp: Date;
 }
@@ -154,6 +155,11 @@ const READINESS_PROGRESS_MULTIPLIER = 0.7;
 const SCHEDULED_POST_MULTIPLIER = 5;
 const MIN_ENGAGEMENT_RATE_THRESHOLD = 6;
 const MIN_POSTS_PER_PLATFORM = 2;
+const MIN_POSTS_FOR_24H_COVERAGE = 5;
+const MAX_ACTIVITY_ITEMS = 6;
+const ENGAGEMENT_ALERT_AGE_MS = 10 * 60 * 1000;
+const COVERAGE_ALERT_AGE_MS = 20 * 60 * 1000;
+const PLATFORM_BALANCE_ALERT_AGE_MS = 40 * 60 * 1000;
 
 function generateAiAssessment(input: {
   readinessProgress: number;
@@ -209,6 +215,48 @@ function generateAiAssessment(input: {
   return { score, priorities: priorities.slice(0, 3) };
 }
 
+function generateAiPerformanceAlerts(input: {
+  engagementRate: number;
+  postsScheduled: number;
+  activePlatforms: number;
+}): ActivityItem[] {
+  const alerts: ActivityItem[] = [];
+  const contentBufferThin = input.postsScheduled < MIN_POSTS_FOR_24H_COVERAGE;
+
+  if (input.engagementRate < MIN_ENGAGEMENT_RATE_THRESHOLD) {
+    alerts.push({
+      id: 'alert-engagement',
+      type: 'alert',
+      message: 'AI Risk Radar: Engagement is below benchmark. Trigger 2 A/B variants for this week.',
+      timestamp: new Date(Date.now() - ENGAGEMENT_ALERT_AGE_MS),
+    });
+  }
+
+  if (contentBufferThin) {
+    alerts.push({
+      id: 'alert-coverage',
+      type: 'alert',
+      message: `AI Risk Radar: Content buffer is thin. Queue at least ${MIN_POSTS_FOR_24H_COVERAGE} posts to protect 24h coverage.`,
+      timestamp: new Date(Date.now() - COVERAGE_ALERT_AGE_MS),
+    });
+  }
+
+  if (
+    !contentBufferThin &&
+    input.activePlatforms > 0 &&
+    input.postsScheduled < input.activePlatforms * MIN_POSTS_PER_PLATFORM
+  ) {
+    alerts.push({
+      id: 'alert-platform-balance',
+      type: 'alert',
+      message: `AI Risk Radar: Platform mix is imbalanced. Add ${MIN_POSTS_PER_PLATFORM} scheduled posts per active channel.`,
+      timestamp: new Date(Date.now() - PLATFORM_BALANCE_ALERT_AGE_MS),
+    });
+  }
+
+  return alerts;
+}
+
 export function DashboardOverview() {
   const { accounts, scheduledPosts } = useAppStore();
   const [engagementData] = useState(generateMockEngagementData(30));
@@ -232,6 +280,12 @@ export function DashboardOverview() {
     postsScheduled,
     activePlatforms,
   });
+  const aiPerformanceAlerts = generateAiPerformanceAlerts({
+    engagementRate,
+    postsScheduled,
+    activePlatforms,
+  });
+  const activityFeed = [...aiPerformanceAlerts, ...mockActivityFeed].slice(0, MAX_ACTIVITY_ITEMS);
 
   const heroMetrics = [
     { 
@@ -348,22 +402,39 @@ export function DashboardOverview() {
         <div className="glass-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Recent Activity</h3>
-            <button className="text-sm text-accent-cyan hover:underline">
-              View All
-            </button>
+            <div className="flex items-center gap-3">
+              {aiPerformanceAlerts.length > 0 && (
+                <span
+                  className="text-[11px] px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-300 font-semibold"
+                  aria-label={`${aiPerformanceAlerts.length} AI performance alerts`}
+                >
+                  {aiPerformanceAlerts.length} AI Alert{aiPerformanceAlerts.length > 1 ? 's' : ''}
+                </span>
+              )}
+              <button className="text-sm text-accent-cyan hover:underline">
+                View All
+              </button>
+            </div>
           </div>
           <div className="space-y-3">
-            {mockActivityFeed.map((activity) => (
+            {activityFeed.map((activity) => (
               <div 
                 key={activity.id}
                 className="flex items-start gap-3 p-3 rounded-lg hover:bg-background/50 transition-colors"
               >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  activity.type === 'alert' ? 'bg-yellow-500/20 text-yellow-300' :
                   activity.type === 'milestone' ? 'bg-accent-pink/20 text-accent-pink' :
                   activity.type === 'post' ? 'bg-accent-cyan/20 text-accent-cyan' :
                   activity.type === 'comment' ? 'bg-accent-purple/20 text-accent-purple' :
                   'bg-green-500/20 text-green-400'
                 }`}>
+                  {activity.type === 'alert' && (
+                    <>
+                      <AlertTriangle size={14} aria-hidden="true" />
+                      <span className="sr-only">AI alert</span>
+                    </>
+                  )}
                   {activity.type === 'milestone' && '🎉'}
                   {activity.type === 'post' && <Calendar size={14} />}
                   {activity.type === 'comment' && <MessageSquare size={14} />}
