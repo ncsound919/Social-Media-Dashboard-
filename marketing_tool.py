@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import urllib.request
+import urllib.error
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List
@@ -159,10 +162,46 @@ def sample_state() -> Dict[str, Any]:
                 "detail": "Contacts + deals",
             },
             {
-                "name": "LinkedIn Ads",
+                "name": "LinkedIn",
                 "status": "pending",
                 "last_sync": "—",
-                "detail": "Finish OAuth to pull audiences",
+                "detail": "Finish OAuth 2.0 PKCE to pull audiences",
+            },
+            {
+                "name": "Twitter / X",
+                "status": "pending",
+                "last_sync": "—",
+                "detail": "Finish OAuth 2.0 PKCE to enable posting",
+            },
+            {
+                "name": "TikTok",
+                "status": "pending",
+                "last_sync": "—",
+                "detail": "Finish OAuth 2.0 to enable video upload",
+            },
+            {
+                "name": "Instagram / Meta",
+                "status": "pending",
+                "last_sync": "—",
+                "detail": "Finish Meta Graph API OAuth to enable posting",
+            },
+            {
+                "name": "YouTube",
+                "status": "pending",
+                "last_sync": "—",
+                "detail": "Finish Google OAuth 2.0 to enable video upload",
+            },
+            {
+                "name": "Facebook",
+                "status": "pending",
+                "last_sync": "—",
+                "detail": "Finish Meta Graph API OAuth to enable page posting",
+            },
+            {
+                "name": "Pinterest",
+                "status": "pending",
+                "last_sync": "—",
+                "detail": "Finish OAuth 2.0 to enable pin creation",
             },
             {
                 "name": "SendGrid events",
@@ -1034,9 +1073,53 @@ def generate_marketing_video(args: argparse.Namespace, state: Dict[str, Any]) ->
         raise SystemExit(f"Failed to generate video: {e}")
 
 
+def _call_opencode_generate_plan(creative_idea: str) -> Dict[str, Any] | None:
+    """
+    Optionally call the OpenCode API to generate a campaign plan.
+    Returns None if OPENCODE_API_URL is not set or the call fails.
+    """
+    opencode_url = os.environ.get("OPENCODE_API_URL", "").rstrip("/")
+    if not opencode_url:
+        return None
+
+    model = os.environ.get("OPENCODE_MODEL", "auto")
+    prompt = (
+        f"You are a B2B marketing strategist. Given the following campaign idea, "
+        f"return a JSON object with these keys: rule_matched (string), segment (string), "
+        f"cadence (string like '0-3-7'), channel (string), variants (integer), "
+        f"auto_handled (list of strings describing auto-configured items).\n\n"
+        f"Campaign idea: {creative_idea}\n\n"
+        f"Respond with valid JSON only, no markdown."
+    )
+    payload = json.dumps({
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.3,
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        f"{opencode_url}/v1/chat/completions",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            content = data["choices"][0]["message"]["content"].strip()
+            # Strip markdown code fences if present
+            if content.startswith("```"):
+                content = content.split("\n", 1)[-1]
+                content = content.rsplit("```", 1)[0].strip()
+            return json.loads(content)
+    except (urllib.error.URLError, KeyError, IndexError, TypeError, json.JSONDecodeError, ValueError):
+        return None
+
+
 def generate_auto_plan(creative_idea: str, automation_rules: Dict[str, Any] | None = None) -> Dict[str, Any]:
     """
     Match user's creative idea to automation rules and generate a plan.
+    When OPENCODE_API_URL is set, delegates to the OpenCode LLM for richer
+    plan generation, falling back to keyword matching if the call fails.
     Uses keyword matching with scoring to determine which rule best applies.
     The rule with the most keyword matches wins.
     
@@ -1047,14 +1130,21 @@ def generate_auto_plan(creative_idea: str, automation_rules: Dict[str, Any] | No
     Returns:
         Dict containing the matched rule and auto-configured plan
     """
+    if not creative_idea or not creative_idea.strip():
+        # Handle empty input gracefully
+        creative_idea = "General campaign"
+
+    # Try OpenCode LLM first when configured
+    llm_plan = _call_opencode_generate_plan(creative_idea)
+    if llm_plan and isinstance(llm_plan, dict):
+        if "auto_handled" not in llm_plan:
+            llm_plan["auto_handled"] = []
+        return llm_plan
+
     # Load the actual rules - use provided rules or load from sample state
     if automation_rules is None:
         state = sample_state()
         automation_rules = state.get("automation_rules", {})
-    
-    if not creative_idea or not creative_idea.strip():
-        # Handle empty input gracefully
-        creative_idea = "General campaign"
     
     idea_lower = creative_idea.lower()
     

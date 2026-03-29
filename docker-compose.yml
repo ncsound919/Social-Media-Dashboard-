@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  worker:
+    build: .
+    command: celery -A celery_worker worker --loglevel=info
+    env_file: .env
+    depends_on:
+      - redis
+    restart: unless-stopped
+    volumes:
+      - .:/app
+    working_dir: /app
+
+  beat:
+    build: .
+    command: celery -A celery_worker beat --loglevel=info
+    env_file: .env
+    depends_on:
+      - redis
+    restart: unless-stopped
+    volumes:
+      - .:/app
+    working_dir: /app
+
+  dashboard:
+    build: .
+    command: python marketing_tool.py --summary
+    env_file: .env
+    depends_on:
+      - redis
+    restart: "no"
+    volumes:
+      - .:/app
+    working_dir: /app
