@@ -143,7 +143,7 @@ Determine whether the claim is supported by the sources. Respond with valid JSON
   try {
     const parsed = JSON.parse(stripMarkdownFences(raw)) as { verified: boolean; confidence: number };
     return {
-      verified: Boolean(parsed.verified),
+      verified: parsed.verified === true,
       confidence: Number(parsed.confidence ?? 0),
     };
   } catch {
