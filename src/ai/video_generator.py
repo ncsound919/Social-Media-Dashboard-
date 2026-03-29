@@ -97,7 +97,7 @@ def _get_pipeline() -> Any:
         logger.info("Loading video model: %s on device: %s", VIDEO_MODEL, AI_DEVICE)
         _pipe = DiffusionPipeline.from_pretrained(
             VIDEO_MODEL,
-            torch_dtype=torch.float32,
+            torch_dtype=torch.float16 if AI_DEVICE == "cuda" else torch.float32,
             # trust_remote_code is intentionally omitted (defaults to False)
             # to prevent arbitrary remote code execution from model repos.
         )
