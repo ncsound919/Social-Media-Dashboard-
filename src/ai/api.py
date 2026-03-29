@@ -341,7 +341,7 @@ async def voicebox_clone(
         raise HTTPException(status_code=400, detail="Unsupported audio file type.")
 
     # Basic MIME-type validation to catch mislabeled uploads.
-    content_type = (reference_audio.content_type or "").lower()
+    content_type = (reference_audio.content_type or "").lower().split(";", 1)[0].strip()
     if content_type:
         allowed_content_types = {
             "audio/wav",
