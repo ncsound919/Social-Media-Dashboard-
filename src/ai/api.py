@@ -39,10 +39,19 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# Configure CORS: allow explicit frontend origins, or fallback to wildcard without credentials.
+_frontend_origins = os.getenv("FRONTEND_ORIGINS", "").strip()
+if _frontend_origins:
+    _allowed_origins = [origin.strip() for origin in _frontend_origins.split(",") if origin.strip()]
+else:
+    _allowed_origins = ["*"]
+
+_allow_credentials = _allowed_origins != ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=_allowed_origins,
+    allow_credentials=_allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
