@@ -125,7 +125,7 @@ def generate_video(
         resolution: Resolution preset (sd or hd).
 
     Returns:
-        Dict with keys: file_path, filename, prompt, duration, resolution, model,
+        Dict with keys: file_path, filename, prompt, duration_seconds, resolution, model,
         record_id, estimated_seconds, cpu_mode.
     """
     _ensure_dirs()
