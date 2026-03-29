@@ -1,7 +1,7 @@
 /**
  * OpenCode LLM Client
  * HTTP client for the OpenCode local API (https://github.com/sst/opencode).
- * Falls back gracefully when OPENCODE_API_URL is not configured.
+ * Defaults to http://localhost:4096 when OPENCODE_API_URL is not configured; callers must handle fallback/gating.
  */
 
 export interface BrandVoiceConfig {
