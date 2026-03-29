@@ -9,7 +9,7 @@ services:
 
   worker:
     build: .
-    command: celery -A celery_worker worker --loglevel=info
+    command: celery -A celery_worker worker --loglevel=info -Q celery,ai_tasks
     env_file: .env
     depends_on:
       - redis
@@ -38,4 +38,36 @@ services:
     restart: "no"
     volumes:
       - .:/app
+    working_dir: /app
+
+  api:
+    build: .
+    command: uvicorn src.ai.api:app --host 0.0.0.0 --port 8000
+    env_file: .env
+    environment:
+      - AI_DEVICE=cpu
+    depends_on:
+      - redis
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - ./media:/app/media
+    working_dir: /app
+
+  # CPU-only AI worker (default — no GPU required).
+  # For GPU acceleration, use: docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up
+  ai-worker:
+    build: .
+    command: celery -A celery_worker worker --loglevel=info -Q ai_tasks
+    env_file: .env
+    environment:
+      - AI_DEVICE=cpu
+    depends_on:
+      - redis
+    restart: unless-stopped
+    volumes:
+      - .:/app
+      - ./media:/app/media
     working_dir: /app

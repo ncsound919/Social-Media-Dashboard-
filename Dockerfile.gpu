@@ -1,0 +1,29 @@
+# GPU-enabled Dockerfile for AI inference tasks
+# Uses NVIDIA CUDA base image for GPU-accelerated model inference
+FROM nvidia/cuda:12.1.0-runtime-ubuntu22.04
+
+WORKDIR /app
+
+# Install Python and system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.11 \
+    python3.11-dev \
+    python3-pip \
+    gcc \
+    ffmpeg \
+    libsndfile1 \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf python3.11 /usr/bin/python \
+    && ln -sf python3.11 /usr/bin/python3
+
+# Install Python dependencies (with CUDA-enabled torch first, then remaining deps)
+COPY requirements.txt .
+RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 \
+    && grep -v -E "^torch" requirements.txt > /tmp/requirements_no_torch.txt \
+    && pip install --no-cache-dir -r /tmp/requirements_no_torch.txt
+
+# Copy project files
+COPY . .
+
+# Default: AI task worker
+CMD ["celery", "-A", "celery_worker", "worker", "--loglevel=info", "-Q", "ai_tasks"]

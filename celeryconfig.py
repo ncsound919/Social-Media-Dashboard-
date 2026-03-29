@@ -15,6 +15,17 @@ task_serializer = "json"
 result_serializer = "json"
 accept_content = ["json"]
 
+from kombu import Exchange, Queue  # type: ignore  # noqa: F401
+
+task_routes = {
+    "celery_worker.generate_video_task": {"queue": "ai_tasks"},
+}
+
+task_queues = (
+    Queue("celery", Exchange("celery"), routing_key="celery"),
+    Queue("ai_tasks", Exchange("ai_tasks"), routing_key="ai_tasks"),
+)
+
 beat_schedule = {
     "check-scheduled-campaigns": {
         "task": "celery_worker.check_scheduled_campaigns",

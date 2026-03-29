@@ -234,6 +234,31 @@ def sync_analytics() -> Dict[str, Any]:
     return {"synced": updated_platforms}
 
 
+@app.task(bind=True, queue="ai_tasks")
+def generate_video_task(
+    self,
+    prompt: str,
+    duration_seconds: int = 3,
+    resolution: str = "sd",
+) -> Dict[str, Any]:
+    """
+    Celery task for AI video generation (runs in the ai_tasks queue).
+    Calls the video_generator service and returns the file path.
+    """
+    try:
+        from src.ai.video_generator import generate_video
+
+        result = generate_video(
+            prompt=prompt,
+            duration_seconds=duration_seconds,
+            resolution=resolution,
+        )
+        return {"success": True, **result}
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Video generation task failed: %s", exc)
+        return {"success": False, "error": str(exc)}
+
+
 @app.task
 def generate_ai_copy(campaign_name: str, segment: str, strategy: str) -> Dict[str, Any]:
     """
