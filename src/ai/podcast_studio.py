@@ -23,8 +23,12 @@ BASE_DIR = Path(__file__).parent.parent.parent
 AUDIO_DIR = BASE_DIR / "media" / "generated" / "audio"
 DB_PATH = BASE_DIR / "media" / "generated" / "media_metadata.db"
 
+# Coqui TTS runs well on CPU — no special configuration needed.
 COQUI_MODEL: str = os.environ.get("COQUI_MODEL", "tts_models/en/ljspeech/tacotron2-DDC")
+# MusicGen small is the lightest variant and is the default for CPU environments.
 MUSICGEN_MODEL: str = os.environ.get("MUSICGEN_MODEL", "facebook/musicgen-small")
+# Cap music generation duration on CPU to avoid excessively long wait times.
+CPU_MAX_MUSIC_SECONDS: int = 10
 
 _tts_model: Optional[Any] = None
 _music_model: Optional[Any] = None
@@ -138,11 +142,14 @@ def generate_narration(script: str, voice: str = "default") -> str:
 
 def generate_background_music(mood: str, duration: int = 30) -> str:
     """
-    Generate background music using Meta's MusicGen.
+    Generate background music using Meta's MusicGen (small variant on CPU).
+
+    On CPU, duration is capped at CPU_MAX_MUSIC_SECONDS (10 s) to keep
+    generation time manageable.
 
     Args:
         mood: Mood/style description (e.g., "relaxing ambient", "upbeat pop").
-        duration: Duration in seconds.
+        duration: Duration in seconds (capped to 10 on CPU).
 
     Returns:
         Path to the generated audio file.
@@ -150,6 +157,10 @@ def generate_background_music(mood: str, duration: int = 30) -> str:
     _ensure_dirs()
     import torch  # type: ignore
     import torchaudio  # type: ignore
+
+    # Cap duration on CPU to avoid multi-minute generation times.
+    if AI_DEVICE != "cuda":
+        duration = min(duration, CPU_MAX_MUSIC_SECONDS)
 
     model = _get_music_model()
     model.set_generation_params(duration=duration)

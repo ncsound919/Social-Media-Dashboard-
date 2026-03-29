@@ -20,6 +20,11 @@ logger = logging.getLogger(__name__)
 AI_DEVICE: str = os.environ.get("AI_DEVICE", "cpu")
 VIDEO_MODEL: str = os.environ.get("VIDEO_MODEL", "damo-vilab/text-to-video-ms-1.7b")
 
+# CPU generation is slow; cap duration and surface an estimate to callers.
+CPU_MAX_DURATION_SECONDS: int = 3
+# Approximate seconds of wall-clock time per frame on CPU (rough estimate).
+CPU_SECONDS_PER_FRAME: float = 8.0
+
 BASE_DIR = Path(__file__).parent.parent.parent
 VIDEOS_DIR = BASE_DIR / "media" / "generated" / "videos"
 DB_PATH = BASE_DIR / "media" / "generated" / "media_metadata.db"
@@ -90,11 +95,11 @@ def _get_pipeline() -> Any:
         from diffusers import DiffusionPipeline  # type: ignore
 
         logger.info("Loading video model: %s on device: %s", VIDEO_MODEL, AI_DEVICE)
-        dtype = torch.float16 if AI_DEVICE == "cuda" else torch.float32
         _pipe = DiffusionPipeline.from_pretrained(
             VIDEO_MODEL,
-            torch_dtype=dtype,
-            trust_remote_code=True,
+            torch_dtype=torch.float32,
+            # trust_remote_code is intentionally omitted (defaults to False)
+            # to prevent arbitrary remote code execution from model repos.
         )
         if AI_DEVICE == "cuda":
             _pipe = _pipe.to("cuda")
@@ -110,17 +115,28 @@ def generate_video(
     """
     Generate a short video clip from a text prompt.
 
+    On CPU, duration is capped at CPU_MAX_DURATION_SECONDS (3 s) to keep
+    generation time manageable. Callers receive an `estimated_seconds` field
+    so the frontend can display a progress estimate.
+
     Args:
         prompt: Text description of the video.
-        duration_seconds: Approximate duration in seconds (1-8).
+        duration_seconds: Approximate duration in seconds (1-8; capped to 3 on CPU).
         resolution: Resolution preset (sd or hd).
 
     Returns:
-        Dict with keys: file_path, prompt, duration, resolution, model, record_id.
+        Dict with keys: file_path, filename, prompt, duration, resolution, model,
+        record_id, estimated_seconds, cpu_mode.
     """
     _ensure_dirs()
+
+    # Cap duration on CPU to avoid extremely long generation times.
+    if AI_DEVICE != "cuda":
+        duration_seconds = min(duration_seconds, CPU_MAX_DURATION_SECONDS)
+
     width, height = RESOLUTION_PRESETS.get(resolution, (256, 256))
     num_frames = min(max(duration_seconds * 8, 8), 64)
+    estimated_seconds = round(num_frames * CPU_SECONDS_PER_FRAME) if AI_DEVICE != "cuda" else 30
 
     pipe = _get_pipeline()
     video_frames = pipe(
@@ -154,4 +170,6 @@ def generate_video(
         "resolution": resolution,
         "model": VIDEO_MODEL,
         "record_id": record_id,
+        "estimated_seconds": estimated_seconds,
+        "cpu_mode": AI_DEVICE != "cuda",
     }

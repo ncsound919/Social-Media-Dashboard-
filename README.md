@@ -2,6 +2,34 @@
 
 Desktop-style command center for enhancing B2B customer engagement through automation, a creation studio, integrations, analytics, and customer feedback tooling.
 
+## 🚀 Quick Start (CPU-only — no GPU required)
+
+Get the full AI Content Creation Suite running in minutes with just Docker and CPU:
+
+```bash
+# 1. Copy the example env file and adjust as needed
+cp .env.example .env
+
+# 2. Start all services (Redis, API, Celery worker, AI worker — all CPU-based)
+docker-compose up
+
+# 3. The AI API is now available at http://localhost:8000
+#    API docs: http://localhost:8000/docs
+```
+
+All AI features (text, image, video, podcast, voice) work on CPU out of the box. Generation times will be longer than GPU (see time estimates in the UI), but no NVIDIA hardware is needed.
+
+### GPU Upgrade Path
+
+If you have an NVIDIA GPU with the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) installed:
+
+```bash
+# Use the GPU compose override to enable CUDA acceleration
+docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up
+```
+
+This overrides the `api` and `ai-worker` services to use `AI_DEVICE=cuda` and the `Dockerfile.gpu` image.
+
 ## Features
 
 - **Automation dashboard**: manage trigger-based email/pipeline follow-ups per segment.

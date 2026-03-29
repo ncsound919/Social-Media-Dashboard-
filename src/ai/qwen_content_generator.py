@@ -18,7 +18,9 @@ logger = logging.getLogger(__name__)
 
 AI_DEVICE: str = os.environ.get("AI_DEVICE", "cpu")
 AI_BACKEND: str = os.environ.get("AI_BACKEND", "transformers")
-QWEN_MODEL: str = os.environ.get("QWEN_MODEL", "Qwen/Qwen2.5-7B-Instruct")
+# Default to the lighter 3B model for CPU-friendly deployments.
+# Override with QWEN_MODEL=Qwen/Qwen2.5-7B-Instruct for higher quality on GPU.
+QWEN_MODEL: str = os.environ.get("QWEN_MODEL", "Qwen/Qwen2.5-3B-Instruct")
 OLLAMA_URL: str = os.environ.get("OLLAMA_URL", "http://localhost:11434")
 
 PLATFORM_HINTS: Dict[str, str] = {
@@ -35,13 +37,16 @@ def _get_pipeline() -> Any:
     """Lazy-load the HuggingFace pipeline."""
     global _pipeline
     if _pipeline is None:
+        import torch  # type: ignore
         from transformers import pipeline  # type: ignore
 
         logger.info("Loading Qwen model: %s on device: %s", QWEN_MODEL, AI_DEVICE)
         _pipeline = pipeline(
             "text-generation",
             model=QWEN_MODEL,
-            device=0 if AI_DEVICE == "cuda" else -1,
+            device_map="cpu" if AI_DEVICE == "cpu" else "auto",
+            torch_dtype=torch.float32 if AI_DEVICE == "cpu" else torch.float16,
+            model_kwargs={"low_cpu_mem_usage": True},
             trust_remote_code=False,
         )
         logger.info("Qwen model loaded.")

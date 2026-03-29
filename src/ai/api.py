@@ -160,8 +160,8 @@ async def generate_text(req: TextGenerateRequest) -> TextGenerateResponse:
         )
         return TextGenerateResponse(**result)
     except Exception as exc:
-        logger.exception("Text generation failed: %s", exc)
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        logger.exception("Text generation failed")
+        raise HTTPException(status_code=500, detail="Text generation failed. Check server logs.") from exc
 
 
 # ---------------------------------------------------------------------------
@@ -184,8 +184,8 @@ async def generate_image(req: ImageGenerateRequest) -> dict:
         )
         return result
     except Exception as exc:
-        logger.exception("Image generation failed: %s", exc)
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        logger.exception("Image generation failed")
+        raise HTTPException(status_code=500, detail="Image generation failed. Check server logs.") from exc
 
 
 @app.get("/api/ai/images", tags=["Image AI"])
@@ -224,8 +224,8 @@ async def generate_video(req: VideoGenerateRequest) -> VideoJobResponse:
             message="Video generation job enqueued. Poll /api/ai/generate-video/{job_id} for status.",
         )
     except Exception as exc:
-        logger.exception("Failed to enqueue video job: %s", exc)
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        logger.exception("Failed to enqueue video job")
+        raise HTTPException(status_code=500, detail="Failed to enqueue video job. Check server logs.") from exc
 
 
 @app.get("/api/ai/generate-video/{job_id}", response_model=VideoStatusResponse, tags=["Video AI"])
@@ -255,8 +255,8 @@ async def get_video_status(job_id: str) -> VideoStatusResponse:
                     status = "FAILURE"
         return VideoStatusResponse(job_id=job_id, status=status, result=job_result)
     except Exception as exc:
-        logger.exception("Failed to get video job status: %s", exc)
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        logger.exception("Failed to get video job status")
+        raise HTTPException(status_code=500, detail="Failed to retrieve job status. Check server logs.") from exc
 
 
 # ---------------------------------------------------------------------------
@@ -273,8 +273,8 @@ async def podcast_narrate(req: NarrateRequest) -> dict:
         path = generate_narration(script=req.script, voice=req.voice)
         return {"file_path": path, "script_preview": req.script[:100]}
     except Exception as exc:
-        logger.exception("Narration generation failed: %s", exc)
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        logger.exception("Narration generation failed")
+        raise HTTPException(status_code=500, detail="Narration generation failed. Check server logs.") from exc
 
 
 @app.post("/api/ai/podcast/music", tags=["Podcast AI"])
@@ -286,8 +286,8 @@ async def podcast_music(req: MusicRequest) -> dict:
         path = generate_background_music(mood=req.mood, duration=req.duration)
         return {"file_path": path, "mood": req.mood, "duration": req.duration}
     except Exception as exc:
-        logger.exception("Music generation failed: %s", exc)
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        logger.exception("Music generation failed")
+        raise HTTPException(status_code=500, detail="Music generation failed. Check server logs.") from exc
 
 
 @app.post("/api/ai/podcast/mix", tags=["Podcast AI"])
@@ -303,8 +303,8 @@ async def podcast_mix(req: MixRequest) -> dict:
         )
         return {"file_path": path}
     except Exception as exc:
-        logger.exception("Podcast mixing failed: %s", exc)
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        logger.exception("Podcast mixing failed")
+        raise HTTPException(status_code=500, detail="Podcast mixing failed. Check server logs.") from exc
 
 
 # ---------------------------------------------------------------------------
@@ -321,8 +321,8 @@ async def voicebox_synthesize(req: SynthesizeRequest) -> dict:
         path = synthesize_voice(text=req.text, speaker_preset=req.speaker_preset)
         return {"file_path": path, "speaker_preset": req.speaker_preset}
     except Exception as exc:
-        logger.exception("Voice synthesis failed: %s", exc)
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        logger.exception("Voice synthesis failed")
+        raise HTTPException(status_code=500, detail="Voice synthesis failed. Check server logs.") from exc
 
 
 @app.post("/api/ai/voicebox/clone", tags=["VoiceBox AI"])
@@ -363,8 +363,8 @@ async def voicebox_clone(
         path = clone_voice(reference_audio_path=str(upload_path), text=text)
         return {"file_path": path}
     except Exception as exc:
-        logger.exception("Voice cloning failed: %s", exc)
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        logger.exception("Voice cloning failed")
+        raise HTTPException(status_code=500, detail="Voice cloning failed. Check server logs.") from exc
     finally:
         if upload_path.exists():
             upload_path.unlink()
@@ -387,3 +387,13 @@ async def voicebox_speakers() -> list:
 async def health() -> dict:
     """Service health check."""
     return {"status": "ok", "device": os.environ.get("AI_DEVICE", "cpu")}
+
+
+@app.get("/api/ai/config", tags=["Health"])
+async def get_config() -> dict:
+    """Return public runtime configuration for the frontend."""
+    device = os.environ.get("AI_DEVICE", "cpu")
+    return {
+        "ai_device": device,
+        "cpu_mode": device != "cuda",
+    }

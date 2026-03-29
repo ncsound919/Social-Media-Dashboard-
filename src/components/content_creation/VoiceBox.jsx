@@ -13,7 +13,21 @@ const BARK_PRESETS = [
   "v2/en_speaker_9",
 ];
 
-export default function VoiceBox() {
+// Pick the best supported mimeType for MediaRecorder so the extension matches.
+function getSupportedMimeType() {
+  const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/ogg"];
+  for (const type of candidates) {
+    if (MediaRecorder.isTypeSupported(type)) return type;
+  }
+  return "";
+}
+
+function mimeToExtension(mimeType) {
+  if (mimeType.includes("ogg")) return ".ogg";
+  return ".webm";
+}
+
+export default function VoiceBox({ cpuMode } = {}) {
   const [activeTab, setActiveTab] = useState("synthesize");
 
   // Synthesize state
@@ -27,12 +41,25 @@ export default function VoiceBox() {
   const [referenceFile, setReferenceFile] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordedBlob, setRecordedBlob] = useState(null);
+  const [recordedObjectUrl, setRecordedObjectUrl] = useState(null);
   const [cloneResult, setCloneResult] = useState(null);
   const [cloneLoading, setCloneLoading] = useState(false);
 
   const [error, setError] = useState(null);
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
+  const mimeTypeRef = useRef("");
+
+  // Revoke the object URL when recordedBlob changes or on unmount.
+  useEffect(() => {
+    if (recordedBlob) {
+      const url = URL.createObjectURL(recordedBlob);
+      setRecordedObjectUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setRecordedObjectUrl(null);
+    }
+  }, [recordedBlob]);
 
   async function handleSynthesize(e) {
     e.preventDefault();
@@ -70,7 +97,13 @@ export default function VoiceBox() {
     try {
       const formData = new FormData();
       formData.append("text", cloneText);
-      const filename = referenceFile ? referenceFile.name : "recording.wav";
+      let filename;
+      if (referenceFile) {
+        filename = referenceFile.name;
+      } else {
+        // Use the actual extension that matches the recorded MIME type.
+        filename = `recording${mimeToExtension(mimeTypeRef.current)}`;
+      }
       formData.append("reference_audio", audioFile, filename);
       const res = await fetch("/api/ai/voicebox/clone", {
         method: "POST",
@@ -91,11 +124,14 @@ export default function VoiceBox() {
     chunksRef.current = [];
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      const mimeType = getSupportedMimeType();
+      mimeTypeRef.current = mimeType;
+      const recorderOptions = mimeType ? { mimeType } : {};
+      const recorder = new MediaRecorder(stream, recorderOptions);
       mediaRecorderRef.current = recorder;
       recorder.ondataavailable = (e) => chunksRef.current.push(e.data);
       recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: "audio/wav" });
+        const blob = new Blob(chunksRef.current, { type: mimeType || "audio/webm" });
         setRecordedBlob(blob);
         stream.getTracks().forEach((t) => t.stop());
       };
@@ -165,7 +201,9 @@ export default function VoiceBox() {
             </select>
           </label>
           <button type="submit" disabled={synthLoading || !synthText.trim()}>
-            {synthLoading ? "Synthesizing…" : "Synthesize Voice"}
+            {synthLoading ? "Synthesizing…" : (
+              <>Synthesize Voice{cpuMode && <span className="time-badge">~2 min on CPU</span>}</>
+            )}
           </button>
           {synthResult && (
             <div className="audio-result">
@@ -201,8 +239,8 @@ export default function VoiceBox() {
                   ⏹ Stop Recording
                 </button>
               )}
-              {recordedBlob && (
-                <audio controls src={URL.createObjectURL(recordedBlob)} />
+              {recordedBlob && recordedObjectUrl && (
+                <audio controls src={recordedObjectUrl} />
               )}
             </div>
             <p className="divider">— or upload a file —</p>
@@ -220,7 +258,9 @@ export default function VoiceBox() {
             type="submit"
             disabled={cloneLoading || !cloneText.trim() || (!recordedBlob && !referenceFile)}
           >
-            {cloneLoading ? "Cloning voice…" : "Clone Voice"}
+            {cloneLoading ? "Cloning voice…" : (
+              <>Clone Voice{cpuMode && <span className="time-badge">~3 min on CPU</span>}</>
+            )}
           </button>
 
           {cloneResult && (

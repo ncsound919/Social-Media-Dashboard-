@@ -9,7 +9,7 @@ const MOODS = [
   "dramatic cinematic",
 ];
 
-export default function PodcastStudio() {
+export default function PodcastStudio({ cpuMode } = {}) {
   const [activeTab, setActiveTab] = useState("narrate");
 
   // Narration state
@@ -143,7 +143,9 @@ export default function PodcastStudio() {
             />
           </label>
           <button type="submit" disabled={narrationLoading || !script.trim()}>
-            {narrationLoading ? "Generating narration…" : "Generate Narration"}
+            {narrationLoading ? "Generating narration…" : (
+              <>Generate Narration{cpuMode && <span className="time-badge">~30s on CPU</span>}</>
+            )}
           </button>
           {narrationPath && (
             <div className="audio-result">
@@ -167,17 +169,21 @@ export default function PodcastStudio() {
             </select>
           </label>
           <label>
-            Duration: {musicDuration}s
+            Duration: {musicDuration}s{cpuMode && musicDuration > 10 && (
+              <span className="cpu-cap-note"> (capped to 10s on CPU)</span>
+            )}
             <input
               type="range"
               min={10}
-              max={120}
-              value={musicDuration}
+              max={cpuMode ? 10 : 120}
+              value={Math.min(musicDuration, cpuMode ? 10 : 120)}
               onChange={(e) => setMusicDuration(Number(e.target.value))}
             />
           </label>
           <button type="submit" disabled={musicLoading}>
-            {musicLoading ? "Generating music…" : "Generate Background Music"}
+            {musicLoading ? "Generating music…" : (
+              <>Generate Background Music{cpuMode && <span className="time-badge">~20s on CPU</span>}</>
+            )}
           </button>
           {musicPath && (
             <div className="audio-result">

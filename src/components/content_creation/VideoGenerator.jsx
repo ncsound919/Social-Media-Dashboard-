@@ -3,8 +3,13 @@ import { useState, useEffect, useRef } from "react";
 const RESOLUTION_OPTIONS = ["sd", "hd"];
 const POLL_INTERVAL_MS = 3000;
 const MAX_DURATION = 8;
+// On CPU, cap duration to match the backend cap.
+const CPU_MAX_DURATION = 3;
+// Rough CPU estimate: num_frames (duration * 8) × ~8 s per frame.
+const CPU_FRAMES_PER_SECOND = 8;
+const CPU_SECONDS_PER_FRAME = 8;
 
-export default function VideoGenerator() {
+export default function VideoGenerator({ cpuMode } = {}) {
   const [prompt, setPrompt] = useState("");
   const [duration, setDuration] = useState(3);
   const [resolution, setResolution] = useState("sd");
@@ -104,12 +109,14 @@ export default function VideoGenerator() {
 
         <div className="form-row">
           <label>
-            Duration: {duration}s
+            Duration: {duration}s{cpuMode && duration > CPU_MAX_DURATION && (
+              <span className="cpu-cap-note"> (capped to {CPU_MAX_DURATION}s on CPU)</span>
+            )}
             <input
               type="range"
               min={1}
-              max={MAX_DURATION}
-              value={duration}
+              max={cpuMode ? CPU_MAX_DURATION : MAX_DURATION}
+              value={Math.min(duration, cpuMode ? CPU_MAX_DURATION : MAX_DURATION)}
               onChange={(e) => setDuration(Number(e.target.value))}
             />
           </label>
@@ -127,7 +134,9 @@ export default function VideoGenerator() {
         </div>
 
         <button type="submit" disabled={loading || !prompt.trim()}>
-          {loading ? "Processing…" : "Generate Video"}
+          {loading ? "Processing…" : (
+            <>Generate Video{cpuMode && <span className="time-badge">~{Math.round(duration * CPU_FRAMES_PER_SECOND * CPU_SECONDS_PER_FRAME)}s on CPU</span>}</>
+          )}
         </button>
       </form>
 
@@ -138,7 +147,12 @@ export default function VideoGenerator() {
           <p>
             Job ID: <code>{jobId}</code>
           </p>
-          <p>Status: <strong>{getProgressLabel()}</strong></p>
+          <p>
+            Status: <strong>{getProgressLabel()}</strong>
+            {jobResult?.estimated_seconds && jobStatus === "STARTED" && (
+              <span className="time-badge"> ~{jobResult.estimated_seconds}s estimated</span>
+            )}
+          </p>
           <div className="progress-bar-container">
             <div
               className={`progress-bar ${jobStatus === "FAILURE" ? "failure" : ""}`}

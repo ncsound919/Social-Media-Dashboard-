@@ -10,7 +10,7 @@ const STYLE_OPTIONS = [
   "vintage",
 ];
 
-export default function ImageGenerator() {
+export default function ImageGenerator({ cpuMode } = {}) {
   const [prompt, setPrompt] = useState("");
   const [size, setSize] = useState("square");
   const [style, setStyle] = useState("photorealistic");
@@ -123,7 +123,9 @@ export default function ImageGenerator() {
         </label>
 
         <button type="submit" disabled={loading || !prompt.trim()}>
-          {loading ? "Generating image…" : "Generate Image"}
+          {loading ? "Generating image…" : (
+            <>Generate Image{cpuMode && <span className="time-badge">~2–5 min on CPU</span>}</>
+          )}
         </button>
       </form>
 

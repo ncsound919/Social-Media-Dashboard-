@@ -4,7 +4,7 @@ const PLATFORMS = ["twitter", "instagram", "linkedin", "tiktok"];
 const TONES = ["engaging", "professional", "humorous", "inspirational", "casual"];
 const CONTENT_TYPES = ["caption", "hashtags", "post_copy", "blog_draft", "calendar_idea"];
 
-export default function ContentTextGenerator({ onGenerated } = {}) {
+export default function ContentTextGenerator({ onGenerated, cpuMode } = {}) {
   const [topic, setTopic] = useState("");
   const [platform, setPlatform] = useState("instagram");
   const [tone, setTone] = useState("engaging");
@@ -96,7 +96,9 @@ export default function ContentTextGenerator({ onGenerated } = {}) {
         </label>
 
         <button type="submit" disabled={loading || !topic.trim()}>
-          {loading ? "Generating…" : "Generate Content"}
+          {loading ? "Generating…" : (
+            <>Generate Content{cpuMode && <span className="time-badge">~1–3 min on CPU</span>}</>
+          )}
         </button>
       </form>
 

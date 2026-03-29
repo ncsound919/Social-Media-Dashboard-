@@ -22,6 +22,13 @@ BASE_DIR = Path(__file__).parent.parent.parent
 AUDIO_DIR = BASE_DIR / "media" / "generated" / "audio"
 DB_PATH = BASE_DIR / "media" / "generated" / "media_metadata.db"
 
+# Use the small Bark model on CPU for faster synthesis.
+# Set BARK_MODEL_SIZE=large to use the full suno/bark model on GPU.
+_default_bark_size = "small" if AI_DEVICE != "cuda" else "large"
+BARK_MODEL_SIZE: str = os.environ.get("BARK_MODEL_SIZE", _default_bark_size)
+
+# OpenVoice runs on CPU natively — no special configuration needed.
+
 BARK_SPEAKER_PRESETS = [
     "v2/en_speaker_0",
     "v2/en_speaker_1",
@@ -89,13 +96,18 @@ def _save_metadata(
 
 
 def _load_bark() -> None:
-    """Lazy-load Bark models into memory."""
+    """Lazy-load Bark models into memory (uses small model on CPU)."""
     global _bark_loaded
     if not _bark_loaded:
         from bark import preload_models  # type: ignore
 
-        logger.info("Loading Bark models (this may take a while)...")
-        preload_models()
+        logger.info("Loading Bark %s models (this may take a while)…", BARK_MODEL_SIZE)
+        # suno/bark-small is significantly faster on CPU.
+        preload_models(
+            text_use_small=BARK_MODEL_SIZE == "small",
+            coarse_use_small=BARK_MODEL_SIZE == "small",
+            fine_use_small=BARK_MODEL_SIZE == "small",
+        )
         _bark_loaded = True
         logger.info("Bark models loaded.")
 

@@ -19,18 +19,23 @@ from typing import Any, Dict, Optional
 logger = logging.getLogger(__name__)
 
 AI_DEVICE: str = os.environ.get("AI_DEVICE", "cpu")
+# Default to the lighter SD v1.5 model for CPU-friendly deployments.
+# Override with SD_MODEL=stabilityai/stable-diffusion-xl-base-1.0 on GPU.
 SD_MODEL: str = os.environ.get(
-    "SD_MODEL", "stabilityai/stable-diffusion-xl-base-1.0"
+    "SD_MODEL", "runwayml/stable-diffusion-v1-5"
 )
+
+# Approximate image generation time on CPU (displayed in the UI).
+CPU_ESTIMATE_SECONDS: int = 180
 
 BASE_DIR = Path(__file__).parent.parent.parent
 IMAGES_DIR = BASE_DIR / "media" / "generated" / "images"
 DB_PATH = BASE_DIR / "media" / "generated" / "media_metadata.db"
 
 SIZE_PRESETS: Dict[str, tuple[int, int]] = {
-    "square": (1024, 1024),
-    "portrait": (768, 1024),
-    "landscape": (1024, 768),
+    "square": (512, 512),
+    "portrait": (512, 768),
+    "landscape": (768, 512),
 }
 
 STYLE_PROMPTS: Dict[str, str] = {
@@ -100,13 +105,18 @@ def _get_pipeline() -> Any:
     global _pipe
     if _pipe is None:
         import torch  # type: ignore
-        from diffusers import DiffusionPipeline  # type: ignore
+        from diffusers import StableDiffusionPipeline  # type: ignore
 
         logger.info("Loading Stable Diffusion model: %s on device: %s", SD_MODEL, AI_DEVICE)
-        dtype = torch.float16 if AI_DEVICE == "cuda" else torch.float32
-        _pipe = DiffusionPipeline.from_pretrained(SD_MODEL, torch_dtype=dtype)
+        _pipe = StableDiffusionPipeline.from_pretrained(
+            SD_MODEL,
+            torch_dtype=torch.float32,
+        )
         if AI_DEVICE == "cuda":
             _pipe = _pipe.to("cuda")
+        else:
+            # Reduce memory usage on CPU
+            _pipe.enable_attention_slicing()
         logger.info("Stable Diffusion model loaded.")
     return _pipe
 
@@ -166,6 +176,8 @@ def generate_image(
         "style": style_preset,
         "model": SD_MODEL,
         "record_id": record_id,
+        "cpu_mode": AI_DEVICE != "cuda",
+        "estimated_seconds": CPU_ESTIMATE_SECONDS if AI_DEVICE != "cuda" else 10,
     }
 
     if return_base64:

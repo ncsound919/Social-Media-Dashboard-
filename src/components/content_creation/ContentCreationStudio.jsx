@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useState, useEffect, useRef } from "react";
 import ContentCalendar from "./ContentCalendar";
 
 const ContentTextGenerator = lazy(() => import("./ContentTextGenerator"));
@@ -28,9 +28,33 @@ function LoadingFallback() {
 export default function ContentCreationStudio() {
   const [activeTab, setActiveTab] = useState("text");
   const [generatedTextItems, setGeneratedTextItems] = useState([]);
+  const [cpuMode, setCpuMode] = useState(false);
+  const tabRefs = useRef({});
+
+  useEffect(() => {
+    fetch("/api/ai/config")
+      .then((r) => r.json())
+      .then((d) => setCpuMode(d.cpu_mode === true))
+      .catch(() => {});
+  }, []);
 
   function handleTextGenerated(item) {
     setGeneratedTextItems((prev) => [item, ...prev].slice(0, 10));
+  }
+
+  // Keyboard navigation for the tab list (arrow keys, Home, End).
+  function handleTabKeyDown(e, tabId) {
+    const ids = TABS.map((t) => t.id);
+    const idx = ids.indexOf(tabId);
+    let next = idx;
+    if (e.key === "ArrowRight") next = (idx + 1) % ids.length;
+    else if (e.key === "ArrowLeft") next = (idx - 1 + ids.length) % ids.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = ids.length - 1;
+    else return;
+    e.preventDefault();
+    setActiveTab(ids[next]);
+    tabRefs.current[ids[next]]?.focus();
   }
 
   return (
@@ -42,14 +66,26 @@ export default function ContentCreationStudio() {
         </p>
       </header>
 
-      <nav className="studio-nav" role="tablist">
+      {cpuMode && (
+        <div className="cpu-mode-banner" role="status">
+          🖥 Running in <strong>CPU mode</strong> — generation may take a few minutes per request.
+          To enable GPU acceleration, see <code>docker-compose.gpu.yml</code>.
+        </div>
+      )}
+
+      <nav className="studio-nav" role="tablist" aria-label="Content creation tools">
         {TABS.map((tab) => (
           <button
             key={tab.id}
+            id={`tab-${tab.id}`}
             role="tab"
             aria-selected={activeTab === tab.id}
+            aria-controls={`tabpanel-${tab.id}`}
+            tabIndex={activeTab === tab.id ? 0 : -1}
             className={`studio-nav-tab ${activeTab === tab.id ? "active" : ""}`}
+            ref={(el) => { tabRefs.current[tab.id] = el; }}
             onClick={() => setActiveTab(tab.id)}
+            onKeyDown={(e) => handleTabKeyDown(e, tab.id)}
           >
             {tab.label}
           </button>
@@ -57,18 +93,28 @@ export default function ContentCreationStudio() {
       </nav>
 
       <main className="studio-content">
-        <Suspense fallback={<LoadingFallback />}>
-          {activeTab === "text" && (
-            <ContentTextGenerator onGenerated={handleTextGenerated} />
-          )}
-          {activeTab === "image" && <ImageGenerator />}
-          {activeTab === "video" && <VideoGenerator />}
-          {activeTab === "podcast" && <PodcastStudio />}
-          {activeTab === "voicebox" && <VoiceBox />}
-          {activeTab === "calendar" && (
-            <ContentCalendar generatedContent={generatedTextItems} />
-          )}
-        </Suspense>
+        {TABS.map((tab) => (
+          <div
+            key={tab.id}
+            id={`tabpanel-${tab.id}`}
+            role="tabpanel"
+            aria-labelledby={`tab-${tab.id}`}
+            hidden={activeTab !== tab.id}
+          >
+            <Suspense fallback={<LoadingFallback />}>
+              {activeTab === tab.id && tab.id === "text" && (
+                <ContentTextGenerator onGenerated={handleTextGenerated} cpuMode={cpuMode} />
+              )}
+              {activeTab === tab.id && tab.id === "image" && <ImageGenerator cpuMode={cpuMode} />}
+              {activeTab === tab.id && tab.id === "video" && <VideoGenerator cpuMode={cpuMode} />}
+              {activeTab === tab.id && tab.id === "podcast" && <PodcastStudio cpuMode={cpuMode} />}
+              {activeTab === tab.id && tab.id === "voicebox" && <VoiceBox cpuMode={cpuMode} />}
+              {activeTab === tab.id && tab.id === "calendar" && (
+                <ContentCalendar generatedContent={generatedTextItems} />
+              )}
+            </Suspense>
+          </div>
+        ))}
       </main>
     </div>
   );
