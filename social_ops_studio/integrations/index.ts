@@ -214,13 +214,13 @@ export class ConnectorRegistry {
   getConnectedPlatforms(): ConnectorPlatform[] {
     const connected: ConnectorPlatform[] = [];
     const envMap: Record<ConnectorPlatform, string | undefined> = {
-      linkedin: process.env.LINKEDIN_ACCESS_TOKEN || process.env.LINKEDIN_REFRESH_TOKEN,
-      twitter: process.env.TWITTER_ACCESS_TOKEN || process.env.TWITTER_BEARER_TOKEN,
-      tiktok: process.env.TIKTOK_ACCESS_TOKEN || process.env.TIKTOK_REFRESH_TOKEN,
+      linkedin: process.env.LINKEDIN_ACCESS_TOKEN,
+      twitter: process.env.TWITTER_ACCESS_TOKEN,
+      tiktok: process.env.TIKTOK_ACCESS_TOKEN,
       instagram: process.env.INSTAGRAM_ACCESS_TOKEN,
-      youtube: process.env.YOUTUBE_ACCESS_TOKEN || process.env.GOOGLE_ACCESS_TOKEN,
-      facebook: process.env.FACEBOOK_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN,
-      pinterest: process.env.PINTEREST_ACCESS_TOKEN || process.env.PINTEREST_REFRESH_TOKEN,
+      youtube: process.env.YOUTUBE_ACCESS_TOKEN,
+      facebook: process.env.FACEBOOK_ACCESS_TOKEN,
+      pinterest: process.env.PINTEREST_ACCESS_TOKEN,
     };
     for (const [platform] of this.connectors) {
       if (envMap[platform]) connected.push(platform);
