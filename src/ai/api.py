@@ -322,9 +322,29 @@ async def voicebox_clone(
     """Clone a voice from a reference audio sample and synthesize text."""
     from src.ai.voicebox import clone_voice
 
+    # Validate file extension against an allowlist that includes common
+    # MediaRecorder outputs (e.g., WebM/Opus).
     safe_suffix = Path(reference_audio.filename).suffix.lower()
-    if safe_suffix not in {".wav", ".mp3", ".ogg", ".flac", ".m4a"}:
+    allowed_suffixes = {".wav", ".mp3", ".ogg", ".flac", ".m4a", ".webm"}
+    if safe_suffix not in allowed_suffixes:
         raise HTTPException(status_code=400, detail="Unsupported audio file type.")
+
+    # Basic MIME-type validation to catch mislabeled uploads.
+    content_type = (reference_audio.content_type or "").lower()
+    if content_type:
+        allowed_content_types = {
+            "audio/wav",
+            "audio/x-wav",
+            "audio/mpeg",
+            "audio/ogg",
+            "audio/flac",
+            "audio/mp4",
+            "audio/aac",
+            "audio/webm",
+            "video/webm",  # some browsers send WebM audio as video/webm
+        }
+        if content_type not in allowed_content_types:
+            raise HTTPException(status_code=400, detail="Unsupported audio MIME type.")
     upload_path = UPLOAD_DIR / f"ref_{int(datetime.utcnow().timestamp() * 1000)}{safe_suffix}"
     try:
         with open(upload_path, "wb") as f:
