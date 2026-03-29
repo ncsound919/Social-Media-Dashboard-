@@ -170,7 +170,7 @@ def send_campaign(self, campaign_id: str) -> Dict[str, Any]:
         logger.warning("Campaign send failed, retrying: %s", campaign_id)
         try:
             raise self.retry(exc=Exception(f"Send failed for {campaign_id}"))
-        except Exception:
+        except self.MaxRetriesExceededError:
             campaign["status"] = "failed"
 
     _save_state(state)
