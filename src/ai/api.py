@@ -242,6 +242,17 @@ async def get_video_status(job_id: str) -> VideoStatusResponse:
             job_result = result.get(propagate=False)
             if isinstance(job_result, Exception):
                 job_result = {"error": str(job_result)}
+            # Normalize logical failures returned by the task so that the
+            # API surface reports a failure status the frontend can detect.
+            if isinstance(job_result, dict):
+                success_flag = job_result.get("success")
+                has_error = "error" in job_result
+                # If Celery thinks the task succeeded but the payload
+                # indicates failure, map this to a FAILURE status.
+                if status == "SUCCESS" and (
+                    success_flag is False or (success_flag is None and has_error)
+                ):
+                    status = "FAILURE"
         return VideoStatusResponse(job_id=job_id, status=status, result=job_result)
     except Exception as exc:
         logger.exception("Failed to get video job status: %s", exc)
