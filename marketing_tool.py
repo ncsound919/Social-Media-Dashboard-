@@ -1111,7 +1111,7 @@ def _call_opencode_generate_plan(creative_idea: str) -> Dict[str, Any] | None:
                 content = content.split("\n", 1)[-1]
                 content = content.rsplit("```", 1)[0].strip()
             return json.loads(content)
-    except (urllib.error.URLError, KeyError, json.JSONDecodeError):
+    except (urllib.error.URLError, KeyError, IndexError, TypeError, json.JSONDecodeError, ValueError):
         return None
 
 
