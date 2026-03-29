@@ -34,12 +34,17 @@ const rolePermissions: Record<TeamRole, TeamPermission[]> = {
  * Map Authelia group names to an application TeamRole.
  * Priority order: admin > editor > viewer (default).
  */
+const ADMIN_GROUPS = ['admin', 'admins'];
+const EDITOR_GROUPS = ['editor', 'editors'];
+
 export function mapGroupsToRole(groups: string[]): TeamRole {
   const normalised = groups.map(g => g.toLowerCase());
-  if (normalised.some(g => g === 'admin' || g === 'admins' || g.includes('admin'))) {
+
+  if (normalised.some(g => ADMIN_GROUPS.includes(g))) {
     return 'admin';
   }
-  if (normalised.some(g => g === 'editor' || g === 'editors' || g.includes('editor'))) {
+
+  if (normalised.some(g => EDITOR_GROUPS.includes(g))) {
     return 'editor';
   }
   return 'viewer';
