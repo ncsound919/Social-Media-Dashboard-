@@ -9,7 +9,7 @@ services:
 
   worker:
     build: .
-    command: celery -A celery_worker worker --loglevel=info
+    command: celery -A celery_worker worker --loglevel=info -Q celery
     env_file: .env
     depends_on:
       - redis
@@ -39,3 +39,40 @@ services:
     volumes:
       - .:/app
     working_dir: /app
+
+  api:
+    build: .
+    command: uvicorn src.ai.api:app --host 0.0.0.0 --port 8000
+    env_file: .env
+    depends_on:
+      - redis
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - ./media:/app/media
+    working_dir: /app
+
+  gpu-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    command: celery -A celery_worker worker --loglevel=info -Q ai_tasks
+    env_file: .env
+    environment:
+      - AI_DEVICE=cuda
+    depends_on:
+      - redis
+    restart: unless-stopped
+    volumes:
+      - .:/app
+      - ./media:/app/media
+    working_dir: /app
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
