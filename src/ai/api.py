@@ -61,8 +61,18 @@ MEDIA_DIR = BASE_DIR / "media" / "generated"
 UPLOAD_DIR = MEDIA_DIR / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-app.mount("/media", StaticFiles(directory=str(MEDIA_DIR)), name="media")
+# Publicly served media subdirectories (avoid serving entire MEDIA_DIR)
+MEDIA_IMAGES_DIR = MEDIA_DIR / "images"
+MEDIA_VIDEOS_DIR = MEDIA_DIR / "videos"
+MEDIA_AUDIO_DIR = MEDIA_DIR / "audio"
 
+MEDIA_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+MEDIA_VIDEOS_DIR.mkdir(parents=True, exist_ok=True)
+MEDIA_AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+
+app.mount("/media/images", StaticFiles(directory=str(MEDIA_IMAGES_DIR)), name="media-images")
+app.mount("/media/videos", StaticFiles(directory=str(MEDIA_VIDEOS_DIR)), name="media-videos")
+app.mount("/media/audio", StaticFiles(directory=str(MEDIA_AUDIO_DIR)), name="media-audio")
 # ---------------------------------------------------------------------------
 # Request / Response models
 # ---------------------------------------------------------------------------
