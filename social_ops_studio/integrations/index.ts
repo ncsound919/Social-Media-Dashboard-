@@ -136,13 +136,68 @@ export class ConnectorRegistry {
    * inspect which platforms are available.
    */
   initFromEnv(): void {
-    this.connectors.set('linkedin', new LinkedInConnector());
-    this.connectors.set('twitter', new TwitterConnector());
-    this.connectors.set('tiktok', new TikTokConnector());
-    this.connectors.set('instagram', new InstagramConnector());
-    this.connectors.set('youtube', new YouTubeConnector());
-    this.connectors.set('facebook', new FacebookConnector());
-    this.connectors.set('pinterest', new PinterestConnector());
+    // LinkedIn
+    const linkedin = new LinkedInConnector();
+    const linkedinAccessToken = process.env.LINKEDIN_ACCESS_TOKEN;
+    const linkedinRefreshToken = process.env.LINKEDIN_REFRESH_TOKEN;
+    if (linkedinAccessToken) {
+      (linkedin as any).setAccessToken?.(linkedinAccessToken, linkedinRefreshToken);
+    }
+    this.connectors.set('linkedin', linkedin);
+
+    // Twitter
+    const twitter = new TwitterConnector();
+    const twitterAccessToken = process.env.TWITTER_ACCESS_TOKEN;
+    const twitterRefreshToken = process.env.TWITTER_REFRESH_TOKEN;
+    if (twitterAccessToken) {
+      (twitter as any).setAccessToken?.(twitterAccessToken, twitterRefreshToken);
+    }
+    this.connectors.set('twitter', twitter);
+
+    // TikTok
+    const tiktok = new TikTokConnector();
+    const tiktokAccessToken = process.env.TIKTOK_ACCESS_TOKEN;
+    const tiktokRefreshToken = process.env.TIKTOK_REFRESH_TOKEN;
+    if (tiktokAccessToken) {
+      (tiktok as any).setAccessToken?.(tiktokAccessToken, tiktokRefreshToken);
+    }
+    this.connectors.set('tiktok', tiktok);
+
+    // Instagram
+    const instagram = new InstagramConnector();
+    const instagramAccessToken = process.env.INSTAGRAM_ACCESS_TOKEN;
+    const instagramRefreshToken = process.env.INSTAGRAM_REFRESH_TOKEN;
+    if (instagramAccessToken) {
+      (instagram as any).setAccessToken?.(instagramAccessToken, instagramRefreshToken);
+    }
+    this.connectors.set('instagram', instagram);
+
+    // YouTube
+    const youtube = new YouTubeConnector();
+    const youtubeAccessToken = process.env.YOUTUBE_ACCESS_TOKEN;
+    const youtubeRefreshToken = process.env.YOUTUBE_REFRESH_TOKEN;
+    if (youtubeAccessToken) {
+      (youtube as any).setAccessToken?.(youtubeAccessToken, youtubeRefreshToken);
+    }
+    this.connectors.set('youtube', youtube);
+
+    // Facebook
+    const facebook = new FacebookConnector();
+    const facebookAccessToken = process.env.FACEBOOK_ACCESS_TOKEN;
+    const facebookRefreshToken = process.env.FACEBOOK_REFRESH_TOKEN;
+    if (facebookAccessToken) {
+      (facebook as any).setAccessToken?.(facebookAccessToken, facebookRefreshToken);
+    }
+    this.connectors.set('facebook', facebook);
+
+    // Pinterest
+    const pinterest = new PinterestConnector();
+    const pinterestAccessToken = process.env.PINTEREST_ACCESS_TOKEN;
+    const pinterestRefreshToken = process.env.PINTEREST_REFRESH_TOKEN;
+    if (pinterestAccessToken) {
+      (pinterest as any).setAccessToken?.(pinterestAccessToken, pinterestRefreshToken);
+    }
+    this.connectors.set('pinterest', pinterest);
   }
 
   /** Get a connector by platform name. */
