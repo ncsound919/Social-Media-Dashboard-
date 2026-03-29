@@ -1,6 +1,6 @@
 /**
  * Authelia OIDC Client
- * Self-hosted identity provider integration using openid-client
+ * Self-hosted identity provider integration via OIDC endpoints
  */
 
 export interface AutheliaConfig {
