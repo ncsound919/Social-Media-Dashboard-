@@ -1,9 +1,12 @@
 /**
  * AI Tone Analysis Service
  * Ethical AI Integration: Detect tone and ensure brand alignment
+ * Uses OpenCode LLM when OPENCODE_API_URL is configured; falls back to
+ * local keyword-matching otherwise.
  */
 
 import { ToneAnalysisResult, PostDraft } from '../data/models';
+import * as opencodeClient from './llm/opencode-client';
 
 export interface BrandVoice {
   preferredTones: string[];
@@ -58,16 +61,35 @@ export class ToneAnalysisService {
   }
 
   /**
-   * Analyze the tone of a post draft
+   * Analyze the tone of a post draft.
+   * When OPENCODE_API_URL is set the OpenCode LLM is used for richer analysis;
+   * otherwise the local keyword-matching approach is used as a fallback.
    */
   async analyzePostTone(draft: PostDraft): Promise<ToneAnalysisResult> {
     const text = this.extractAllText(draft);
+
+    if (process.env.OPENCODE_API_URL && this.brandVoice) {
+      try {
+        const llmResult = await opencodeClient.analyzeTone(text, this.brandVoice);
+        return {
+          postDraftId: draft.id,
+          detectedTone: llmResult.detectedTone,
+          confidence: llmResult.confidence,
+          brandAlignment: llmResult.brandAlignment,
+          suggestions: llmResult.suggestions,
+          analyzedAt: new Date(),
+        };
+      } catch {
+        // Fall through to local analysis on error
+      }
+    }
+
     const detectedTones = this.detectTones(text);
     const primaryTone = this.getPrimaryTone(detectedTones);
     const brandAlignment = this.checkBrandAlignment(primaryTone);
     const suggestions = this.generateSuggestions(primaryTone, brandAlignment, text);
 
-    const result: ToneAnalysisResult = {
+    return {
       postDraftId: draft.id,
       detectedTone: primaryTone,
       confidence: this.calculateConfidence(detectedTones, primaryTone),
@@ -75,8 +97,6 @@ export class ToneAnalysisService {
       suggestions,
       analyzedAt: new Date(),
     };
-
-    return result;
   }
 
   /**

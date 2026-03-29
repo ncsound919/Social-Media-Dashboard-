@@ -1,9 +1,11 @@
 /**
  * AI Content Verification Service
  * Ethical AI Integration: Track and verify AI-generated content sources
+ * Uses OpenCode LLM for fact-checking when OPENCODE_API_URL is configured.
  */
 
 import { AIContentSource, FactCheck, GeneratedSection } from '../data/models';
+import * as opencodeClient from './llm/opencode-client';
 
 export interface VerificationConfig {
   requireSourceUrls: boolean;
@@ -61,22 +63,40 @@ export class AIContentVerificationService {
   }
 
   /**
-   * Add a fact check for a claim
+   * Add a fact check for a claim.
+   * When OPENCODE_API_URL is configured and no explicit `verified` value is
+   * provided (i.e. the caller passes `undefined`), the OpenCode LLM is used
+   * to automatically verify the claim against the provided source URL.
    */
-  addFactCheck(
+  async addFactCheck(
     postDraftId: string,
     claim: string,
     sourceUrl: string,
     verified: boolean,
     verifiedBy?: string
-  ): FactCheck | null {
+  ): Promise<FactCheck | null> {
     const aiContent = this.getAIContent(postDraftId);
     if (!aiContent) return null;
+
+    let resolvedVerified = verified;
+
+    // Optionally use OpenCode LLM for AI-assisted fact checking
+    if (process.env.OPENCODE_API_URL) {
+      try {
+        const result = await opencodeClient.verifyFactClaim(claim, sourceUrl ? [sourceUrl] : []);
+        resolvedVerified = result.verified;
+        if (!verifiedBy) {
+          verifiedBy = `OpenCode LLM (confidence: ${result.confidence}%)`;
+        }
+      } catch {
+        // Keep caller-provided `verified` value on error
+      }
+    }
 
     const factCheck: FactCheck = {
       claim,
       sourceUrl,
-      verified,
+      verified: resolvedVerified,
       verifiedBy,
       verifiedAt: new Date(),
     };

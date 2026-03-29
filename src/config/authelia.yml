@@ -1,0 +1,233 @@
+###############################################################################
+# Authelia Configuration
+# Self-hosted OIDC identity provider for Social Ops Studio
+###############################################################################
+
+theme: dark
+default_redirection_url: "https://your-domain.example.com"
+
+server:
+  host: 0.0.0.0
+  port: 9091
+
+log:
+  level: info
+
+totp:
+  issuer: "social-ops-studio"
+  period: 30
+  skew: 1
+
+authentication_backend:
+  file:
+    path: /config/users_database.yml
+
+access_control:
+  default_policy: deny
+  rules:
+    - domain: "your-domain.example.com"
+      policy: bypass
+      resources:
+        - "^/api/auth/.*$"
+    - domain: "your-domain.example.com"
+      subject: "group:admins"
+      policy: two_factor
+    - domain: "your-domain.example.com"
+      subject:
+        - "group:editors"
+        - "group:viewers"
+      policy: one_factor
+
+session:
+  name: authelia_session
+  secret: "a_very_long_and_random_secret_change_me"
+  expiration: 1h
+  inactivity: 15m
+  domain: "your-domain.example.com"
+
+regulation:
+  max_retries: 3
+  find_time: 2m
+  ban_time: 5m
+
+storage:
+  encryption_key: "a_very_long_and_random_encryption_key_change_me"
+  local:
+    path: /config/db.sqlite3
+
+notifier:
+  filesystem:
+    filename: /config/notification.txt
+
+identity_providers:
+  oidc:
+    hmac_secret: "a_very_long_and_random_hmac_secret_change_me"
+    issuer_private_key: |
+      -----BEGIN RSA PRIVATE KEY-----
+      # Replace with your actual RSA private key (generate with:
+      # openssl genrsa -out private.pem 4096)
+      -----END RSA PRIVATE KEY-----
+
+    clients:
+
+      # LinkedIn
+      - id: "linkedin"
+        description: "LinkedIn"
+        secret: "LINKEDIN_OIDC_CLIENT_SECRET_PLACEHOLDER"
+        public: false
+        authorization_policy: one_factor
+        redirect_uris:
+          - "https://your-domain.example.com/api/auth/callback/linkedin"
+        scopes:
+          - openid
+          - profile
+          - email
+          - groups
+        grant_types:
+          - authorization_code
+        response_types:
+          - code
+
+      # Twitter / X
+      - id: "twitter"
+        description: "Twitter / X"
+        secret: "TWITTER_OIDC_CLIENT_SECRET_PLACEHOLDER"
+        public: false
+        authorization_policy: one_factor
+        redirect_uris:
+          - "https://your-domain.example.com/api/auth/callback/twitter"
+        scopes:
+          - openid
+          - profile
+          - email
+          - groups
+        grant_types:
+          - authorization_code
+        response_types:
+          - code
+
+      # TikTok
+      - id: "tiktok"
+        description: "TikTok"
+        secret: "TIKTOK_OIDC_CLIENT_SECRET_PLACEHOLDER"
+        public: false
+        authorization_policy: one_factor
+        redirect_uris:
+          - "https://your-domain.example.com/api/auth/callback/tiktok"
+        scopes:
+          - openid
+          - profile
+          - email
+          - groups
+        grant_types:
+          - authorization_code
+        response_types:
+          - code
+
+      # Instagram / Meta
+      - id: "instagram"
+        description: "Instagram / Meta"
+        secret: "INSTAGRAM_OIDC_CLIENT_SECRET_PLACEHOLDER"
+        public: false
+        authorization_policy: one_factor
+        redirect_uris:
+          - "https://your-domain.example.com/api/auth/callback/instagram"
+        scopes:
+          - openid
+          - profile
+          - email
+          - groups
+        grant_types:
+          - authorization_code
+        response_types:
+          - code
+
+      # YouTube
+      - id: "youtube"
+        description: "YouTube"
+        secret: "YOUTUBE_OIDC_CLIENT_SECRET_PLACEHOLDER"
+        public: false
+        authorization_policy: one_factor
+        redirect_uris:
+          - "https://your-domain.example.com/api/auth/callback/youtube"
+        scopes:
+          - openid
+          - profile
+          - email
+          - groups
+        grant_types:
+          - authorization_code
+        response_types:
+          - code
+
+      # Facebook
+      - id: "facebook"
+        description: "Facebook"
+        secret: "FACEBOOK_OIDC_CLIENT_SECRET_PLACEHOLDER"
+        public: false
+        authorization_policy: one_factor
+        redirect_uris:
+          - "https://your-domain.example.com/api/auth/callback/facebook"
+        scopes:
+          - openid
+          - profile
+          - email
+          - groups
+        grant_types:
+          - authorization_code
+        response_types:
+          - code
+
+      # Pinterest
+      - id: "pinterest"
+        description: "Pinterest"
+        secret: "PINTEREST_OIDC_CLIENT_SECRET_PLACEHOLDER"
+        public: false
+        authorization_policy: one_factor
+        redirect_uris:
+          - "https://your-domain.example.com/api/auth/callback/pinterest"
+        scopes:
+          - openid
+          - profile
+          - email
+          - groups
+        grant_types:
+          - authorization_code
+        response_types:
+          - code
+
+      # Threads (Meta)
+      - id: "threads"
+        description: "Threads"
+        secret: "THREADS_OIDC_CLIENT_SECRET_PLACEHOLDER"
+        public: false
+        authorization_policy: one_factor
+        redirect_uris:
+          - "https://your-domain.example.com/api/auth/callback/threads"
+        scopes:
+          - openid
+          - profile
+          - email
+          - groups
+        grant_types:
+          - authorization_code
+        response_types:
+          - code
+
+      # Social Ops Studio dashboard (main app)
+      - id: "social-ops-studio"
+        description: "Social Ops Studio"
+        secret: "SOCIAL_OPS_STUDIO_OIDC_CLIENT_SECRET_PLACEHOLDER"
+        public: false
+        authorization_policy: one_factor
+        redirect_uris:
+          - "https://your-domain.example.com/api/auth/callback/authelia"
+        scopes:
+          - openid
+          - profile
+          - email
+          - groups
+        grant_types:
+          - authorization_code
+        response_types:
+          - code
