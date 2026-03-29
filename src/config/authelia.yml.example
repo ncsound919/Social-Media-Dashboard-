@@ -1,6 +1,13 @@
 ###############################################################################
-# Authelia Configuration
-# Self-hosted OIDC identity provider for Social Ops Studio
+# Authelia Configuration Template
+# Copy this file to authelia.yml and replace ALL placeholder values before use.
+# IMPORTANT: Never commit authelia.yml with real secrets to version control.
+#
+# Required replacements:
+#   - your-domain.example.com → your actual domain
+#   - a_very_long_and_random_* → output of: openssl rand -hex 32
+#   - RSA private key → output of: openssl genrsa 4096
+#   - *_PLACEHOLDER → actual client secrets for each OIDC client
 ###############################################################################
 
 theme: dark
@@ -29,6 +36,7 @@ access_control:
       policy: bypass
       resources:
         - "^/api/auth/.*$"
+        - "^/api/health$"
     - domain: "your-domain.example.com"
       subject: "group:admins"
       policy: two_factor

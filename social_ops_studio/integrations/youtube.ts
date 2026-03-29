@@ -114,10 +114,11 @@ export class YouTubeConnector {
     const uploadUrl = initRes.headers.get('Location');
     if (!uploadUrl) throw new Error('YouTube: missing upload location header');
 
-    // Upload the video bytes
+    // Upload the video bytes — Authorization header is required even for resumable upload URLs
     const uploadRes = await fetch(uploadUrl, {
       method: 'PUT',
       headers: {
+        Authorization: `Bearer ${this.token}`,
         'Content-Type': 'video/mp4',
         'Content-Length': String(totalBytes),
       },

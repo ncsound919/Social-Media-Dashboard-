@@ -64,15 +64,15 @@ export class AIContentVerificationService {
 
   /**
    * Add a fact check for a claim.
-   * When OPENCODE_API_URL is configured and no explicit `verified` value is
-   * provided (i.e. the caller passes `undefined`), the OpenCode LLM is used
-   * to automatically verify the claim against the provided source URL.
+   * When `verified` is `undefined` and `OPENCODE_API_URL` is configured, the
+   * OpenCode LLM is used to automatically verify the claim. An explicit
+   * `verified` value (true/false) is always authoritative and never overridden.
    */
   async addFactCheck(
     postDraftId: string,
     claim: string,
     sourceUrl: string,
-    verified: boolean,
+    verified?: boolean,
     verifiedBy?: string
   ): Promise<FactCheck | null> {
     const aiContent = this.getAIContent(postDraftId);
@@ -80,8 +80,8 @@ export class AIContentVerificationService {
 
     let resolvedVerified = verified;
 
-    // Optionally use OpenCode LLM for AI-assisted fact checking
-    if (process.env.OPENCODE_API_URL) {
+    // Only call OpenCode when no explicit human verification has been provided
+    if (resolvedVerified === undefined && process.env.OPENCODE_API_URL) {
       try {
         const result = await opencodeClient.verifyFactClaim(claim, sourceUrl ? [sourceUrl] : []);
         resolvedVerified = result.verified;
@@ -89,14 +89,14 @@ export class AIContentVerificationService {
           verifiedBy = `OpenCode LLM (confidence: ${result.confidence}%)`;
         }
       } catch {
-        // Keep caller-provided `verified` value on error
+        // Leave resolvedVerified as undefined; factCheck will store false below
       }
     }
 
     const factCheck: FactCheck = {
       claim,
       sourceUrl,
-      verified: resolvedVerified,
+      verified: resolvedVerified ?? false,
       verifiedBy,
       verifiedAt: new Date(),
     };

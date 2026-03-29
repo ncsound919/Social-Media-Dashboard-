@@ -166,15 +166,20 @@ def send_campaign(self, campaign_id: str) -> Dict[str, Any]:
     if success:
         campaign["status"] = "sent"
         campaign["last_sent"] = _today_iso()
-    else:
-        logger.warning("Campaign send failed, retrying: %s", campaign_id)
-        try:
-            raise self.retry(exc=Exception(f"Send failed for {campaign_id}"))
-        except self.MaxRetriesExceededError:
-            campaign["status"] = "failed"
+        _save_state(state)
+        return {"success": True, "campaign": campaign_id}
 
-    _save_state(state)
-    return {"success": success, "campaign": campaign_id}
+    # Send failed — ask Celery to retry.
+    # self.retry() raises celery.exceptions.Retry on non-final attempts (propagates
+    # to the Celery worker for rescheduling) and MaxRetriesExceededError when the
+    # retry limit is hit. Only catch the latter so normal retries are not swallowed.
+    logger.warning("Campaign send failed, retrying: %s", campaign_id)
+    try:
+        self.retry(exc=Exception(f"Send failed for {campaign_id}"))
+    except self.MaxRetriesExceededError:
+        campaign["status"] = "failed"
+        _save_state(state)
+        return {"success": False, "campaign": campaign_id}
 
 
 @app.task

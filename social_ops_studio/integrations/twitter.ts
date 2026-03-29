@@ -103,7 +103,14 @@ export class TwitterConnector {
     return { id: data.id, text: data.text, url: `https://twitter.com/i/web/status/${data.id}` };
   }
 
-  /** Upload a media file and return its media_id. */
+  /**
+   * Upload a media file and return its media_id.
+   *
+   * NOTE: The Twitter v1.1 media upload endpoint (`upload.twitter.com/1.1`) requires
+   * OAuth 1.0a user context. OAuth 2.0 Bearer tokens are NOT accepted. If you only
+   * have an OAuth 2.0 access token, media upload will fail with a 401. Use an OAuth
+   * 1.0a client library (e.g., `oauth-1.0a`) to sign these requests in production.
+   */
   async uploadMedia(filePath: string): Promise<MediaUploadResult> {
     const fs = await import('fs');
     const path = await import('path');
@@ -144,18 +151,25 @@ export class TwitterConnector {
     return { mediaId: media_id_string };
   }
 
-  /** Get analytics for a tweet. */
+  /**
+   * Get analytics for a tweet.
+   * Requests both `public_metrics` (likes, retweets, replies, quotes) and
+   * `non_public_metrics` (impressions, url_link_clicks). `non_public_metrics`
+   * requires OAuth 2.0 user context and is only available for your own tweets.
+   */
   async getTweetAnalytics(tweetId: string): Promise<TweetAnalytics> {
-    const url = `${TWITTER_API_BASE}/tweets/${tweetId}?tweet.fields=public_metrics`;
+    const url = `${TWITTER_API_BASE}/tweets/${tweetId}?tweet.fields=public_metrics,non_public_metrics`;
     const res = await fetch(url, { headers: this.authHeaders() });
     if (!res.ok) throw new Error(`Twitter getTweetAnalytics failed: ${await res.text()}`);
     const { data } = await res.json();
-    const m = data.public_metrics ?? {};
-    const impressionCount = m.impression_count ?? 0;
-    const likeCount = m.like_count ?? 0;
-    const retweetCount = m.retweet_count ?? 0;
-    const replyCount = m.reply_count ?? 0;
-    const quoteCount = m.quote_count ?? 0;
+    const pub = data.public_metrics ?? {};
+    const nonPub = data.non_public_metrics ?? {};
+    // `impression_count` lives in non_public_metrics, not public_metrics
+    const impressionCount = nonPub.impression_count ?? 0;
+    const likeCount = pub.like_count ?? 0;
+    const retweetCount = pub.retweet_count ?? 0;
+    const replyCount = pub.reply_count ?? 0;
+    const quoteCount = pub.quote_count ?? 0;
     const engagementRate =
       impressionCount > 0
         ? (likeCount + retweetCount + replyCount + quoteCount) / impressionCount

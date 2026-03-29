@@ -137,8 +137,8 @@ export class InstagramConnector {
     };
   }
 
-  /** Create and publish a carousel post from multiple images. */
-  async scheduleCarousel(images: string[], caption: string): Promise<PublishResult> {
+  /** Create and immediately publish a carousel post from multiple images. */
+  async publishCarousel(images: string[], caption: string): Promise<PublishResult> {
     // Step 1: Create child containers for each image
     const childIds: string[] = [];
     for (const imageUrl of images) {

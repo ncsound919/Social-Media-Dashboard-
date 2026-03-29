@@ -31,23 +31,27 @@ const config: NextAuthConfig = {
   callbacks: {
     async jwt({ token, account, profile }) {
       if (account && profile) {
-        // Persist Authelia claims in the JWT on first sign-in
-        token.autheliaGroups = (profile as Record<string, unknown>).groups ?? [];
-        token.autheliaProfile = profile;
+        const p = profile as Record<string, unknown>;
+        // Store only the specific claims we need — avoid exceeding cookie size limits
+        token.autheliaGroups = Array.isArray(p.groups) && p.groups.every(g => typeof g === 'string')
+          ? p.groups
+          : [];
+        token.autheliaPreferredUsername = typeof p.preferred_username === 'string'
+          ? p.preferred_username
+          : undefined;
       }
       return token;
     },
     async session({ session, token }) {
       // Map JWT claims to the application session user
-      const claims = {
+      const claims: Record<string, unknown> = {
         sub: token.sub,
         email: token.email,
         name: token.name,
-        preferred_username: token.preferred_username,
+        preferred_username: token.autheliaPreferredUsername,
         groups: token.autheliaGroups,
-        ...(token.autheliaProfile as Record<string, unknown>),
       };
-      const sessionUser = buildSessionUser(claims as Record<string, unknown>);
+      const sessionUser = buildSessionUser(claims);
       (session as Record<string, unknown>).user = sessionUser;
       return session;
     },

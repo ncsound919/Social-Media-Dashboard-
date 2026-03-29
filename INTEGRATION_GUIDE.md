@@ -29,7 +29,7 @@ This guide covers how to set up every external dependency for the Social Ops Stu
 
    ```bash
    mkdir -p /etc/authelia
-   cp src/config/authelia.yml /etc/authelia/configuration.yml
+   cp src/config/authelia.yml.example /etc/authelia/configuration.yml
    ```
 
 2. **Edit the configuration**
