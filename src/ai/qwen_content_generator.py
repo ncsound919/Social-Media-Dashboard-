@@ -42,7 +42,7 @@ def _get_pipeline() -> Any:
             "text-generation",
             model=QWEN_MODEL,
             device=0 if AI_DEVICE == "cuda" else -1,
-            trust_remote_code=True,
+            trust_remote_code=False,
         )
         logger.info("Qwen model loaded.")
     return _pipeline
