@@ -195,22 +195,33 @@ def clone_voice(
     output_filename = f"clone_{timestamp}.wav"
     output_path = str(AUDIO_DIR / output_filename)
 
-    src_se, _ = se_extractor.get_se(base_path, tone_color_converter, vad=False)
-    tone_color_converter.convert(
-        audio_src_path=base_path,
-        src_se=src_se,
-        tgt_se=target_se,
-        output_path=output_path,
-    )
+    try:
+        src_se, _ = se_extractor.get_se(base_path, tone_color_converter, vad=False)
+        tone_color_converter.convert(
+            audio_src_path=base_path,
+            src_se=src_se,
+            tgt_se=target_se,
+            output_path=output_path,
+        )
 
-    _save_metadata(
-        media_type="audio_clone",
-        file_path=output_path,
-        prompt=text[:200],
-        model="myshell-ai/OpenVoice",
-        metadata={"reference_audio": reference_audio_path},
-    )
-    return output_path
+        _save_metadata(
+            media_type="audio_clone",
+            file_path=output_path,
+            prompt=text[:200],
+            model="myshell-ai/OpenVoice",
+            metadata={"reference_audio": reference_audio_path},
+        )
+        return output_path
+    finally:
+        try:
+            if os.path.exists(base_path):
+                os.remove(base_path)
+        except OSError as e:
+            logger.warning(
+                "Failed to delete temporary base audio file %s: %s",
+                base_path,
+                e,
+            )
 
 
 def list_speaker_presets() -> list[str]:
