@@ -7,9 +7,12 @@ import json
 import os
 import urllib.request
 import urllib.error
+import uuid
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List
+
+from filelock import FileLock
 
 from rich import box
 from rich.align import Align
@@ -23,6 +26,7 @@ from rich.theme import Theme
 
 BASE_DIR = Path(__file__).parent
 DATA_PATH = BASE_DIR / "data" / "state.json"
+STATE_LOCK = DATA_PATH.parent / "state.json.lock"
 DEFAULT_SNAPSHOT_PATH = BASE_DIR / "docs" / "dashboard_snapshot.svg"
 COLOR_BG_PRIMARY = "#0b1220"
 COLOR_BG_SECONDARY = "#11192d"
@@ -82,6 +86,7 @@ def sample_state() -> Dict[str, Any]:
         ],
         "campaigns": [
             {
+                "id": str(uuid.uuid4()),
                 "name": "Onboarding Drip",
                 "segment": "New Leads",
                 "trigger": "Sign-up form",
@@ -91,6 +96,7 @@ def sample_state() -> Dict[str, Any]:
                 "next_send": tomorrow.isoformat(),
             },
             {
+                "id": str(uuid.uuid4()),
                 "name": "Win-back Sequence",
                 "segment": "Dormant Accounts",
                 "trigger": "Inactivity 30d",
@@ -100,6 +106,7 @@ def sample_state() -> Dict[str, Any]:
                 "next_send": tomorrow.isoformat(),
             },
             {
+                "id": str(uuid.uuid4()),
                 "name": "Post-demo Follow-up",
                 "segment": "Active Customers",
                 "trigger": "Demo completed",
@@ -341,16 +348,18 @@ def load_state() -> Dict[str, Any]:
     if not DATA_PATH.exists():
         return reset_state()
     try:
-        with DATA_PATH.open("r", encoding="utf-8") as handle:
-            return json.load(handle)
+        with FileLock(STATE_LOCK, timeout=5):
+            with DATA_PATH.open("r", encoding="utf-8") as handle:
+                return json.load(handle)
     except json.JSONDecodeError:
         return reset_state()
 
 
 def save_state(state: Dict[str, Any]) -> None:
     DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with DATA_PATH.open("w", encoding="utf-8") as handle:
-        json.dump(state, handle, indent=2)
+    with FileLock(STATE_LOCK, timeout=5):
+        with DATA_PATH.open("w", encoding="utf-8") as handle:
+            json.dump(state, handle, indent=2)
 
 
 def reset_state() -> Dict[str, Any]:
@@ -713,7 +722,7 @@ def build_actions_panel(state: Dict[str, Any]) -> Panel:
     today = datetime.now().date()
     tomorrow = today + timedelta(days=1)
     
-    def parse_date(date_str: str) -> datetime.date | None:
+    def parse_date(date_str: str) -> date | None:
         try:
             return datetime.strptime(date_str, "%Y-%m-%d").date()
         except (ValueError, TypeError):
@@ -964,6 +973,7 @@ def apply_strategy_to_segment(args: argparse.Namespace, state: Dict[str, Any]) -
     tomorrow = (datetime.now().date() + timedelta(days=1)).isoformat()
     
     # Create a campaign for the first step of the strategy
+    generated_count = 0
     if steps and channels:
         campaign_name = f"{strategy.get('name', 'Strategy')}: {steps[0]}"
         # Select a concrete channel from the strategy context:
@@ -977,6 +987,7 @@ def apply_strategy_to_segment(args: argparse.Namespace, state: Dict[str, Any]) -
             channel = channels[0] if channels else "Email"
         
         campaigns.append({
+            "id": str(uuid.uuid4()),
             "name": campaign_name,
             "segment": segment_name,
             "trigger": f"Strategy: {strategy.get('name', '')}",
@@ -985,11 +996,12 @@ def apply_strategy_to_segment(args: argparse.Namespace, state: Dict[str, Any]) -
             "status": "ready",
             "next_send": tomorrow,
         })
+        generated_count = 1
     
     save_state(state)
     console = themed_console()
     console.print(f"[green]✓[/green] Applied strategy '{strategy.get('full_name', strategy_name)}' to segment '{segment_name}'")
-    console.print(f"  Generated {1} campaign(s)")
+    console.print(f"  Generated {generated_count} campaign(s)")
 
 
 def generate_marketing_video(args: argparse.Namespace, state: Dict[str, Any]) -> None:
@@ -1096,10 +1108,14 @@ def _call_opencode_generate_plan(creative_idea: str) -> Dict[str, Any] | None:
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.3,
     }).encode("utf-8")
+    api_key = os.environ.get("OPENCODE_API_KEY", "")
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
     req = urllib.request.Request(
         f"{opencode_url}/v1/chat/completions",
         data=payload,
-        headers={"Content-Type": "application/json"},
+        headers=headers,
         method="POST",
     )
     try:
