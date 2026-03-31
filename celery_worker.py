@@ -218,7 +218,13 @@ def check_scheduled_campaigns() -> Dict[str, Any]:
             )
             continue
         if next_send <= today:
-            campaign_id = campaign.get("id", campaign.get("name", ""))
+            campaign_id = campaign.get("id")
+            if not campaign_id:
+                logger.warning(
+                    "Scheduled campaign '%s' is missing an id; skipping legacy entry.",
+                    campaign.get("name"),
+                )
+                continue
             send_campaign.delay(campaign_id)
             enqueued.append(campaign_id)
             logger.info("Enqueued campaign: %s", campaign_id)
