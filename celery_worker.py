@@ -162,8 +162,8 @@ def _send_to_platform(channel: str, campaign: Dict[str, Any]) -> bool:
 @app.task(bind=True, max_retries=3, default_retry_delay=60)
 def send_campaign(self, campaign_id: str) -> Dict[str, Any]:
     """
-    Load state, find campaign by name, and dispatch it to the appropriate
-    social platform connector.
+    Load state, find campaign by id (falling back to name for legacy entries),
+    and dispatch it to the appropriate social platform connector.
     """
     state = _load_state()
     campaigns: List[Dict[str, Any]] = state.get("campaigns", [])
@@ -203,6 +203,10 @@ def check_scheduled_campaigns() -> Dict[str, Any]:
     """
     Scan state for campaigns where next_send <= today and status == scheduled,
     then enqueue send_campaign for each.
+
+    Uses the campaign's stable UUID when available, falling back to name for
+    legacy campaigns that pre-date the UUID migration. send_campaign accepts
+    either form via its own id-or-name lookup.
     """
     state = _load_state()
     campaigns: List[Dict[str, Any]] = state.get("campaigns", [])
@@ -221,11 +225,12 @@ def check_scheduled_campaigns() -> Dict[str, Any]:
             )
             continue
         if next_send <= today:
-            campaign_id = campaign.get("id")
+            # Prefer stable UUID; fall back to name for legacy entries so that
+            # campaigns created before the UUID migration are still dispatched.
+            campaign_id = campaign.get("id") or campaign.get("name", "")
             if not campaign_id:
                 logger.warning(
-                    "Scheduled campaign '%s' is missing an id; skipping legacy entry.",
-                    campaign.get("name"),
+                    "Scheduled campaign has neither id nor name; skipping.",
                 )
                 continue
             send_campaign.delay(campaign_id)
