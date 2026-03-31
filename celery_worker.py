@@ -168,7 +168,10 @@ def send_campaign(self, campaign_id: str) -> Dict[str, Any]:
     state = _load_state()
     campaigns: List[Dict[str, Any]] = state.get("campaigns", [])
 
-    campaign = next((c for c in campaigns if c.get("id") == campaign_id), None)
+    campaign = next(
+        (c for c in campaigns if c.get("id") == campaign_id or c.get("name") == campaign_id),
+        None,
+    )
     if not campaign:
         logger.error("Campaign not found: %s", campaign_id)
         return {"success": False, "error": f"Campaign not found: {campaign_id}"}
