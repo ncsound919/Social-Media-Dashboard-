@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from celery import Celery
+from filelock import FileLock
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -30,6 +31,7 @@ OPENCODE_MODEL = os.environ.get("OPENCODE_MODEL", "auto")
 
 BASE_DIR = Path(__file__).parent
 DATA_PATH = BASE_DIR / "data" / "state.json"
+STATE_LOCK = DATA_PATH.parent / "state.json.lock"
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +46,8 @@ app.config_from_object("celeryconfig")
 def _load_state() -> Dict[str, Any]:
     if DATA_PATH.exists():
         try:
-            return json.loads(DATA_PATH.read_text(encoding="utf-8"))
+            with FileLock(STATE_LOCK, timeout=5):
+                return json.loads(DATA_PATH.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             return {}
     return {}
@@ -52,11 +55,21 @@ def _load_state() -> Dict[str, Any]:
 
 def _save_state(state: Dict[str, Any]) -> None:
     DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
-    DATA_PATH.write_text(json.dumps(state, indent=2, default=str), encoding="utf-8")
+    with FileLock(STATE_LOCK, timeout=5):
+        DATA_PATH.write_text(json.dumps(state, indent=2, default=str), encoding="utf-8")
 
 
 def _today_iso() -> str:
     return datetime.now().date().isoformat()
+
+
+def _is_valid_iso_date(date_str: str) -> bool:
+    """Return True if date_str is a valid YYYY-MM-DD ISO date."""
+    try:
+        datetime.strptime(date_str, "%Y-%m-%d")
+        return True
+    except (ValueError, TypeError):
+        return False
 
 
 # ---------------------------------------------------------------------------
@@ -155,7 +168,10 @@ def send_campaign(self, campaign_id: str) -> Dict[str, Any]:
     state = _load_state()
     campaigns: List[Dict[str, Any]] = state.get("campaigns", [])
 
-    campaign = next((c for c in campaigns if c.get("name") == campaign_id), None)
+    campaign = next(
+        (c for c in campaigns if c.get("id") == campaign_id or c.get("name") == campaign_id),
+        None,
+    )
     if not campaign:
         logger.error("Campaign not found: %s", campaign_id)
         return {"success": False, "error": f"Campaign not found: {campaign_id}"}
@@ -197,11 +213,24 @@ def check_scheduled_campaigns() -> Dict[str, Any]:
         if campaign.get("status") != "scheduled":
             continue
         next_send = campaign.get("next_send", "")
-        if next_send and next_send <= today:
-            name = campaign.get("name", "")
-            send_campaign.delay(name)
-            enqueued.append(name)
-            logger.info("Enqueued campaign: %s", name)
+        if not next_send or not _is_valid_iso_date(next_send):
+            logger.warning(
+                "Campaign '%s' has invalid next_send date: %s",
+                campaign.get("name"),
+                next_send,
+            )
+            continue
+        if next_send <= today:
+            campaign_id = campaign.get("id")
+            if not campaign_id:
+                logger.warning(
+                    "Scheduled campaign '%s' is missing an id; skipping legacy entry.",
+                    campaign.get("name"),
+                )
+                continue
+            send_campaign.delay(campaign_id)
+            enqueued.append(campaign_id)
+            logger.info("Enqueued campaign: %s", campaign_id)
 
     return {"enqueued": enqueued, "count": len(enqueued)}
 
@@ -283,10 +312,15 @@ def generate_ai_copy(campaign_name: str, segment: str, strategy: str) -> Dict[st
         "temperature": 0.4,
     }).encode("utf-8")
 
+    api_key = os.environ.get("OPENCODE_API_KEY", "")
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
     req = urllib.request.Request(
         f"{OPENCODE_API_URL}/v1/chat/completions",
         data=payload,
-        headers={"Content-Type": "application/json"},
+        headers=headers,
         method="POST",
     )
     try:
