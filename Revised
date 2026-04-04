@@ -1,0 +1,326 @@
+{
+  "project": {
+    "name": "Social Ops Studio",
+    "version": "1.0",
+    "description": "Local-first desktop control center for managing and analyzing social content across multiple platforms.",
+    "architecture": "MVVM (Model-View-ViewModel) with modular services and plugins",
+    "style_guide": {
+      "theme": "dark",
+      "accent_colors": ["#00F5D4", "#FF6F91", "#5B5FFF"],
+      "background": "#050712",
+      "surface": "#0B1020",
+      "border_radius": 16,
+      "glassmorphism": true,
+      "sidebar_width": 260
+    }
+  },
+
+  "use_case_focus": {
+    "primary_user": "solo_creator_dev",
+    "goals": [
+      "Plan and schedule content across all major platforms from one place",
+      "Monitor account health and growth at a glance",
+      "Quickly repurpose content between platforms",
+      "Experiment with different post variants and track performance"
+    ],
+    "non_goals": [
+      "Public SaaS product",
+      "Heavy multi-tenant team features",
+      "Cloud-only workflows"
+    ]
+  },
+
+  "core_dashboard_layout": {
+    "main_sections": [
+      "Overview",
+      "Content Lab",
+      "Schedule",
+      "Analytics",
+      "Inbox",
+      "Assets",
+      "Automation",
+      "Settings"
+    ],
+    "overview_page": {
+      "hero_card": {
+        "title": "WELCOME BACK, DEV!",
+        "subtitle": "Today’s performance snapshot & upcoming posts",
+        "metrics": [
+          "total_reach_30d",
+          "follower_delta_7d",
+          "posts_scheduled",
+          "engagement_rate_30d"
+        ]
+      },
+      "widgets": [
+        {
+          "id": "kpi_row",
+          "type": "metric_row",
+          "metrics": [
+            "total_impressions_30d",
+            "total_engagements_30d",
+            "active_platforms",
+            "avg_posting_frequency"
+          ]
+        },
+        {
+          "id": "engagement_chart",
+          "type": "line_chart",
+          "series": ["likes", "comments", "shares", "saves"],
+          "time_range": "last_30_days"
+        },
+        {
+          "id": "platform_breakdown",
+          "type": "bar_chart",
+          "dimension": "platform",
+          "metrics": ["impressions", "engagement_rate"]
+        },
+        {
+          "id": "next_up",
+          "type": "list",
+          "title": "Next Scheduled Posts",
+          "max_items": 5
+        },
+        {
+          "id": "activity_feed",
+          "type": "activity_list",
+          "title": "Recent Activity",
+          "items_source": "local_events_log"
+        }
+      ]
+    }
+  },
+
+  "social_platforms": {
+    "supported": [
+      "twitter_x",
+      "facebook_pages",
+      "instagram_business",
+      "linkedin_pages",
+      "tiktok",
+      "youtube",
+      "pinterest",
+      "threads",
+      "bluesky"
+    ],
+    "platform_cards": [
+      {
+        "id": "twitter_x",
+        "label": "Twitter / X",
+        "icon": "icon_twitter_x.svg",
+        "primary_color": "#1DA1F2",
+        "supports": ["text", "image", "video", "threads", "scheduling", "analytics_basic"]
+      },
+      {
+        "id": "instagram_business",
+        "label": "Instagram",
+        "icon": "icon_instagram.svg",
+        "primary_color": "#E1306C",
+        "supports": ["image", "carousel", "reels", "stories_meta", "scheduling", "analytics_basic"]
+      },
+      {
+        "id": "tiktok",
+        "label": "TikTok",
+        "icon": "icon_tiktok.svg",
+        "primary_color": "#010101",
+        "supports": ["short_video", "captions", "scheduling_limited", "analytics_basic"]
+      }
+    ],
+    "connection_model": {
+      "storage": "local_encrypted",
+      "auth_flow": "per_platform_oauth",
+      "fields": [
+        "platform",
+        "account_name",
+        "avatar_url",
+        "access_token_encrypted",
+        "refresh_token_encrypted",
+        "last_sync_at",
+        "scopes"
+      ],
+      "security": {
+        "encryption_mechanism": "AES-256-GCM symmetric encryption with a unique random IV and authentication tag per record.",
+        "key_management": "Per-device encryption key stored in the operating system's secure key store (e.g., Keychain, DPAPI, KeyStore), with hardware-backed protection where available. Application code must never persist raw keys to disk or source control.",
+        "key_rotation": "Support rotation of the master encryption key; tokens are re-encrypted on rotation, and old keys are securely destroyed after migration.",
+        "data_handling": "Access and refresh tokens are decrypted only in memory when needed for OAuth calls and are cleared from memory as soon as practical.",
+        "standards": [
+          "Follow OWASP Application Security Verification Standard (ASVS) recommendations for credential storage.",
+          "Use a vetted cryptographic library provided by the platform/runtime (no custom crypto).",
+          "Use a secure key-derivation function (e.g., PBKDF2, Argon2, or platform equivalent) if user secrets are ever used to derive encryption keys."
+        ]
+      }
+    }
+  },
+
+  "modules": {
+    "content_lab": {
+      "description": "Single workspace to draft, remix, and adapt posts to different platforms.",
+      "features": [
+        "Multi-platform composer with per-platform variants",
+        "Quick duplicate & adapt button (e.g. Twitter → Instagram caption)",
+        "Snippet library for hooks, CTAs, hashtags",
+        "Simple local AI assist (optional) for rewriting and tone tweaks"
+      ]
+    },
+    "schedule": {
+      "view_modes": ["calendar_month", "calendar_week", "list_compact"],
+      "features": [
+        "Drag-and-drop posts on calendar",
+        "Color-coded by platform",
+        "Conflict warnings (same content too close together)",
+        "Posting windows (preferred hours per platform)"
+      ]
+    },
+    "analytics": {
+      "pages": [
+        "Overview",
+        "Per Platform",
+        "Per Content Type",
+        "Experiments"
+      ],
+      "key_metrics": [
+        "followers",
+        "impressions",
+        "engagement_rate",
+        "link_clicks",
+        "avg_watch_time",
+        "best_time_of_day_estimate"
+      ],
+      "experiments": {
+        "supports_ab_testing": true,
+        "dimensions": ["hook", "thumbnail", "posting_time"]
+      }
+    },
+    "inbox": {
+      "description": "Unified view of comments/mentions/DMs where API allows.",
+      "features": [
+        "Account filters",
+        "Platform filters",
+        "Reply & quick templates (where APIs allow)",
+        "Mark as handled / star for follow-up"
+      ]
+    },
+    "assets": {
+      "description": "Local library of media and text snippets.",
+      "categories": ["images", "video_clips", "audio_snippets", "templates", "hashtag_sets"],
+      "features": [
+        "Tagging and search",
+        "Basic image editing (crop, resize, overlays)",
+        "Thumbnail presets (16:9, 9:16, 1:1)",
+        "Brand kit: logo, colors, fonts references"
+      ]
+    },
+    "automation": {
+      "description": "Lightweight rules engine focused on your own workflow.",
+      "rule_triggers": [
+        "time_reached",
+        "metric_threshold",
+        "content_tag",
+        "manual_button"
+      ],
+      "rule_actions": [
+        "auto_schedule_in_window",
+        "duplicate_to_other_platform",
+        "add_to_experiment",
+        "export_report_snippet"
+      ],
+      "debug_view": true
+    }
+  },
+
+  "ai_local_first": {
+    "use_mode": "optional_local_only",
+    "engine": "ollama_or_other_local_llm",
+    "capabilities": [
+      "rewrite_caption(tone)",
+      "summarize_long_text_to_caption",
+      "generate_variants(n)",
+      "extract_hashtags_from_text",
+      "suggest_alt_text(image_description)"
+    ],
+    "non_goals": [
+      "full chat interface",
+      "cloud-hosted LLM services"
+    ]
+  },
+
+  "ui_components": {
+    "shell": {
+      "sidebar": {
+        "items": [
+          "Overview",
+          "Content Lab",
+          "Schedule",
+          "Analytics",
+          "Inbox",
+          "Assets",
+          "Automation",
+          "Settings"
+        ],
+        "style": {
+          "background": "#050712",
+          "active_item_glow": true,
+          "icons": "line_duotone",
+          "icon_size": 20
+        }
+      },
+      "topbar": {
+        "elements": [
+          "search_bar",
+          "active_profile_switcher",
+          "sync_status_indicator",
+          "theme_toggle",
+          "quick_add_button"
+        ]
+      }
+    },
+    "cards": {
+      "metric_card": {
+        "props": ["label", "value", "delta", "icon", "platform_badge"],
+        "style": {
+          "background": "rgba(14, 20, 40, 0.96)",
+          "blur": 24,
+          "border": "1px solid rgba(255, 255, 255, 0.04)"
+        }
+      },
+      "list_card": {
+        "use_cases": ["recent_activity", "upcoming_posts", "inbox_items"]
+      },
+      "chart_card": {
+        "supports": ["line", "bar", "pie", "heatmap"],
+        "header_actions": ["time_range_switcher", "platform_filter", "export"]
+      }
+    }
+  },
+
+  "data_model_simplified": {
+    "entities": {
+      "Account": {
+        "fields": ["id", "platform", "handle", "display_name", "avatar_path", "connected_at", "last_sync_at", "settings"]
+      },
+      "PostDraft": {
+        "fields": ["id", "title", "body_rich", "platform_variants", "tags", "status", "created_at", "updated_at"]
+      },
+      "ScheduledPost": {
+        "fields": ["id", "account_id", "post_draft_id", "scheduled_for", "status", "error_message", "published_post_id"]
+      },
+      "MetricSnapshot": {
+        "fields": ["id", "account_id", "captured_at", "metrics", "source"],
+        "description": "Time-series snapshots of account metrics for local analytics."
+      },
+      "Rule": {
+        "fields": ["id", "name", "trigger_type", "conditions", "actions", "enabled"]
+      }
+    }
+  },
+
+  "desktop_runtime": {
+    "targets": ["windows", "macos", "linux"],
+    "packaging": "pyinstaller_or_electron-builder",
+    "sync_model": {
+      "primary_mode": "single_user_local",
+      "optional": "manual_backup_and_restore",
+      "future": "local_network_sync_for_team"
+    }
+  }
+}

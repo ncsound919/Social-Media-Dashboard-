@@ -1,0 +1,27 @@
+# GPU override for the AI Content Creation Suite.
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up
+#
+# This file overrides the `api` and `ai-worker` services to use CUDA
+# and the GPU-enabled Dockerfile. Requires NVIDIA Container Toolkit:
+# https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html
+
+version: "3.9"
+
+services:
+  api:
+    environment:
+      - AI_DEVICE=cuda
+
+  ai-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    environment:
+      - AI_DEVICE=cuda
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

@@ -1,0 +1,283 @@
+{
+  "premium_modules": {
+    "coding_outline": {
+      "rules": [
+        "NO third-party SaaS dependencies - everything local-first",
+        "Use existing repositories/services - do NOT create new DB connections",
+        "UI modules ONLY call core services - no direct API/DB calls",
+        "All new features extend existing data models (Account, PostDraft, etc.)",
+        "Maintain dark neon glassmorphic theme exactly",
+        "15-day MVP scope - shippable core for each module"
+      ],
+      "file_structure": {
+        "core/": {
+          "new_services": [
+            "analytics_intelligence.py",
+            "ai_content_assistant.py", 
+            "campaign_manager.py",
+            "audience_intelligence.py",
+            "content_library.py",
+            "social_listening.py",
+            "team_collaboration.py",
+            "link_manager.py",
+            "visual_studio.py",
+            "content_curation.py",
+            "smart_notifications.py",
+            "integration_hub.py",
+            "ab_testing_engine.py",
+            "mobile_sync.py",
+            "backup_recovery.py"
+          ]
+        },
+        "ui/": {
+          "new_views": [
+            "analytics_intelligence_view.py",
+            "ai_assistant_view.py",
+            "campaign_view.py",
+            "audience_view.py",
+            "content_library_view.py",
+            "listening_view.py",
+            "team_view.py",
+            "link_manager_view.py",
+            "visual_studio_view.py",
+            "curation_view.py",
+            "notifications_view.py",
+            "integrations_view.py",
+            "ab_testing_view.py",
+            "mobile_view.py",
+            "backup_view.py"
+          ]
+        },
+        "data/": {
+          "new_models": {
+            "models.py": {
+              "add_tables": [
+                "Campaign",
+                "ABTest",
+                "ContentAsset", 
+                "LinkShort",
+                "NotificationRule",
+                "TeamMember",
+                "ListeningTopic"
+              ]
+            }
+          }
+        }
+      },
+      "data_models": {
+        "Campaign": {
+          "fields": ["id", "name", "goal", "budget", "start_date", "end_date", "posts", "metrics"],
+          "relations": ["post_drafts", "accounts"]
+        },
+        "ABTest": {
+          "fields": ["id", "campaign_id", "variant_a", "variant_b", "winner", "stats"],
+          "metrics": ["ctr", "engagement", "conversions"]
+        },
+        "ContentAsset": {
+          "fields": ["id", "filename", "tags", "performance_score", "usage_count", "file_path"],
+          "types": ["image", "video", "template"]
+        },
+        "LinkShort": {
+          "fields": ["id", "original_url", "short_code", "post_id", "click_count", "created_at"],
+          "relations": ["post_draft"]
+        },
+        "NotificationRule": {
+          "fields": ["id", "name", "trigger_type", "threshold", "enabled", "recipients"],
+          "relations": ["team_members"]
+        },
+        "TeamMember": {
+          "fields": ["id", "email", "role", "permissions", "invited_at", "status"],
+          "relations": ["accounts"]
+        },
+        "ListeningTopic": {
+          "fields": ["id", "keywords", "sentiment_threshold", "alert_enabled", "last_checked"],
+          "relations": []
+        },
+        "CuratedItem": {
+          "fields": ["id", "source_url", "title", "description", "published_at", "commentary"],
+          "relations": ["post_drafts"]
+        },
+        "Alert": {
+          "fields": ["id", "alert_type", "metric_name", "threshold", "current_value", "triggered_at"],
+          "relations": ["accounts"]
+        }
+      },
+      "core_services": {
+        "1_analytics_intelligence": {
+          "class": "AnalyticsIntelligence",
+          "methods": [
+            "get_cross_platform_metrics() -> dict",
+            "analyze_competitors(accounts: list) -> dict", 
+            "predict_performance(post_draft: PostDraft) -> dict",
+            "calculate_roi(campaign_id: int) -> float"
+          ],
+          "data_sources": ["MetricSnapshot", "Account"]
+        },
+        "2_ai_content_assistant": {
+          "class": "AIContentAssistant",
+          "methods": [
+            "generate_variants(draft: PostDraft, count: int) -> list[PostDraft]",
+            "optimize_for_platform(draft: PostDraft, platform: str) -> PostDraft",
+            "maintain_brand_voice(text: str, brand_rules: dict) -> str"
+          ],
+          "engine": "local_ollama"
+        },
+        "3_campaign_manager": {
+          "class": "CampaignManager",
+          "methods": [
+            "create_campaign(name: str, posts: list[int]) -> int",
+            "clone_campaign(campaign_id: int) -> int",
+            "track_roi(campaign_id: int) -> dict"
+          ]
+        },
+        "4_audience_intelligence": {
+          "class": "AudienceIntelligence",
+          "methods": [
+            "get_demographics(account_id: int) -> dict",
+            "segment_followers(account_id: int) -> list[dict]",
+            "forecast_growth(account_id: int) -> dict"
+          ],
+          "sources": ["platform_apis", "local_cache"]
+        },
+        "5_content_library": {
+          "class": "ContentLibrary",
+          "methods": [
+            "add_asset(file_path: str, tags: list[str]) -> int",
+            "search_assets(query: str, tags: list[str]) -> list[ContentAsset]",
+            "get_top_performers() -> list[ContentAsset]"
+          ]
+        },
+        "6_social_listening": {
+          "class": "SocialListening",
+          "methods": [
+            "monitor_keywords(keywords: list[str]) -> list[ListeningTopic]",
+            "detect_crisis(mentions: list) -> bool",
+            "find_trending_topics() -> list[str]"
+          ]
+        },
+        "7_team_collaboration": {
+          "class": "TeamManager",
+          "methods": [
+            "invite_member(email: str, role: str) -> int",
+            "request_approval(post_id: int, reviewer_id: int) -> bool",
+            "get_permissions(user_id: int) -> dict"
+          ]
+        },
+        "8_link_manager": {
+          "class": "LinkManager",
+          "methods": [
+            "shorten_url(url: str, post_id: int) -> str",
+            "track_clicks(link_id: int) -> dict",
+            "generate_qr(url: str) -> Path"
+          ]
+        },
+        "9_visual_studio": {
+          "class": "VisualStudio",
+          "methods": [
+            "resize_image(image_path: str, platform: str) -> Path",
+            "apply_brand_overlay(image_path: str, brand_kit: dict) -> Path",
+            "create_template(name: str, layers: list) -> int"
+          ],
+          "libs": ["pillow", "opencv"]
+        },
+        "10_content_curation": {
+          "class": "ContentCurator",
+          "methods": [
+            "import_rss(url: str) -> list[CuratedItem]",
+            "suggest_content(topics: list[str]) -> list[dict]",
+            "add_commentary(curated_item: dict, comment: str) -> PostDraft"
+          ]
+        },
+        "11_smart_notifications": {
+          "class": "NotificationEngine",
+          "methods": [
+            "check_spikes() -> list[Alert]",
+            "send_digest() -> bool",
+            "celebrate_milestone(metric: str, value: float) -> bool"
+          ]
+        },
+        "12_integration_hub": {
+          "class": "IntegrationHub",
+          "methods": [
+            "sync_crm(custom_crm_config: dict) -> bool",
+            "trigger_webhook(event: str, payload: dict) -> bool",
+            "export_to_email_tool(data: dict) -> bool"
+          ]
+        },
+        "13_ab_testing": {
+          "class": "ABTestingEngine",
+          "methods": [
+            "create_test(variant_a: PostDraft, variant_b: PostDraft) -> int",
+            "analyze_results(test_id: int) -> dict",
+            "auto_deploy_winner(test_id: int) -> bool"
+          ]
+        },
+        "14_mobile_sync": {
+          "class": "MobileSync",
+          "methods": [
+            "generate_approval_link(post_id: int) -> str",
+            "poll_mobile_approvals() -> list[int]",
+            "push_notifications(device_token: str, message: str) -> bool"
+          ]
+        },
+        "15_backup_recovery": {
+          "class": "BackupManager",
+          "methods": [
+            "create_backup() -> Path",
+            "restore_backup(backup_path: Path) -> bool",
+            "export_all_data(format: str) -> Path"
+          ]
+        }
+      },
+      "ui_integration": {
+        "new_sidebar_items": [
+          "Analytics Intelligence",
+          "AI Assistant", 
+          "Campaigns",
+          "Audience",
+          "Content Library",
+          "Listening",
+          "Team",
+          "Links",
+          "Visual Studio",
+          "Curation",
+          "Notifications",
+          "Integrations",
+          "A/B Tests",
+          "Mobile",
+          "Backup"
+        ],
+        "dashboard_widgets": [
+          "campaign_roi_card",
+          "ab_test_winners",
+          "top_content_assets", 
+          "listening_alerts",
+          "team_pending_approvals"
+        ]
+      },
+      "implementation_order": [
+        "1. Update data/models.py (add 7 new tables)",
+        "2. Core services 1-5 (Analytics, AI, Campaigns, Audience, Library)",
+        "3. UI views 1-5 (match existing pattern)",
+        "4. Core services 6-10 (Listening, Team, Links, Visual, Curation)", 
+        "5. UI views 6-10",
+        "6. Core services 11-15 (Notifications, Integrations, AB, Mobile, Backup)",
+        "7. UI views 11-15 + dashboard widgets",
+        "8. Navigation + premium feature toggle"
+      ],
+      "copilot_prompts": {
+        "service_template": "Create {class_name} service using existing PostDraftRepository pattern. Methods: {methods}. NO direct DB calls. Return dataclasses.",
+        "view_template": "Create {view_name} using DashboardOverviewView pattern. Inject {service_name}. Dark neon theme. Refresh button.",
+        "model_template": "Add {model_name} to models.py. Fields: {fields}. Relations: {relations}."
+      },
+      "config_updates": {
+        "add_to_platform_config": [
+          "brand_voice_rules: dict",
+          "listening_keywords: list[str]", 
+          "team_members: list[dict]",
+          "backup_schedule: str"
+        ]
+      }
+    }
+  }
+}

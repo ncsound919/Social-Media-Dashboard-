@@ -1,0 +1,161 @@
+# Marketing-Tool
+
+Desktop-style command center for enhancing B2B customer engagement through automation, a creation studio, integrations, analytics, and customer feedback tooling.
+
+## 🚀 Quick Start (CPU-only — no GPU required)
+
+Get the full AI Content Creation Suite running in minutes with just Docker and CPU:
+
+```bash
+# 1. Copy the example env file and adjust as needed
+cp .env.example .env
+
+# 2. Start all services (Redis, API, Celery worker, AI worker — all CPU-based)
+docker-compose up
+
+# 3. The AI API is now available at http://localhost:8000
+#    API docs: http://localhost:8000/docs
+```
+
+All AI features (text, image, video, podcast, voice) work on CPU out of the box. Generation times will be longer than GPU (see time estimates in the UI), but no NVIDIA hardware is needed.
+
+### GPU Upgrade Path
+
+If you have an NVIDIA GPU with the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) installed:
+
+```bash
+# Use the GPU compose override to enable CUDA acceleration
+docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up
+```
+
+This overrides the `api` and `ai-worker` services to use `AI_DEVICE=cuda` and the `Dockerfile.gpu` image.
+
+## Features
+
+- **Automation dashboard**: manage trigger-based email/pipeline follow-ups per segment.
+- **Creation studio**: keep marketing templates (email, decks, social) close at hand.
+- **Marketing strategies**: apply proven frameworks (ABM, AIDA, RACE, 7Ps) to customer segments.
+- **Video generation**: create marketing videos from templates using MoviePy.
+- **Segmentation**: track key customer groups and their criteria.
+- **Connectors & integrations**: quick view of CRM, email, and social connection health plus sync status.
+- **Operational health**: backend services and databases with latency, errors, and storage snapshots.
+- **Analytics & A/B**: monitor open/click/reply rates and experiment winners with benchmark comparisons vs. industry averages.
+- **Feedback tools**: surveys/questions you routinely send after demos or onboarding.
+- **Morning focus list**: the top few actions to move engagement forward, color-coded by priority (red for today, yellow for tomorrow).
+- **Quick Actions Menu**: 6 one-click shortcuts at the dashboard top for common tasks.
+- **Morning Brief Mode**: Compact view showing Today's Focus and top 3 metrics for daily standups.
+- **Shareable Status Cards**: Export individual SVG panels for Slack/Teams sharing.
+- **Branded Watermarks**: Auto-added business name and date to all SVG exports for professional sharing.
+
+### NEW: Leading Platform Features
+
+The dashboard now includes best-in-class features inspired by leading social media management tools:
+
+- **Hootsuite Pro**: Bulk scheduling, social listening, advanced analytics, and approval workflows
+- **Buffer Studio**: Content preview, link-in-bio tool, AI content assistant, and simple analytics
+- **Loomly Creative**: Content optimization tips, visual calendars, brand asset library, and team approval processes
+- **Metricool Analytics**: Unified analytics dashboard, competitor analysis, automated reporting, and ad performance tracking
+
+See [PLATFORM_FEATURES.md](PLATFORM_FEATURES.md) for detailed documentation on all platform features.
+
+### Social Ops Studio - OAuth 2.0 Integration
+
+The Social Ops Studio (TypeScript/Next.js application in `social_ops_studio/`) now supports **OAuth 2.0 with PKCE** for secure authentication with social media platforms:
+
+- **Twitter/X** - Full OAuth 2.0 with PKCE support
+- **Facebook Pages** - OAuth 2.0 integration
+- **Instagram Business** - OAuth 2.0 via Meta platform
+- **TikTok** - OAuth 2.0 with PKCE support
+- **YouTube, LinkedIn, Pinterest** - OAuth 2.0 ready
+
+See [social_ops_studio/OAUTH_SETUP.md](social_ops_studio/OAUTH_SETUP.md) for detailed OAuth configuration and setup instructions.
+
+## Quick start
+
+1. Create a virtual environment (optional) and install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. Launch the dashboard summary (uses sample data in `data/state.json` and persists updates):
+   ```bash
+   python marketing_tool.py --summary
+   ```
+3. **NEW: Use Creative Mode for easy campaign creation:**
+   ```bash
+   python marketing_tool.py --creative-mode
+   ```
+   Creative Mode provides an intuitive interface where you simply describe your campaign idea (e.g., "demo video for SMB CTOs") and the system automatically:
+   - Matches your idea to predefined automation rules
+   - Configures segments, channels, and cadence
+   - Sets up A/B testing variants
+   - Provides a split-screen studio for content editing (70%) and automation status (30%)
+
+4. Add a new automation/campaign targeting a segment:
+   ```bash
+python marketing_tool.py --add-campaign \
+  --name "Partner nurture" \
+  --segment "Active Customers" \
+  --trigger "Quarterly business review" \
+  --channel "Email" \
+  --template "QBR follow-up" \
+  --next-send 2025-01-15  # example date; adjust as needed
+```
+   Optional: set an initial status with `--status ready|running|paused` (defaults to `scheduled`).
+5. Export a snapshot of the dashboard (SVG) to share or pin for your morning routine:
+   ```bash
+   python marketing_tool.py --snapshot
+   ```
+   The snapshot is saved to `docs/dashboard_snapshot.svg` with your business name as a watermark.
+
+6. Get a quick morning brief with today's focus and top 3 metrics:
+   ```bash
+   python marketing_tool.py --brief
+   ```
+
+7. Export individual status cards for sharing in Slack/Teams:
+   ```bash
+   python marketing_tool.py --export-cards
+   ```
+   Cards are saved to `docs/card_*.svg` with timestamps.
+
+If you want to restore the original sample data at any time:
+```bash
+python marketing_tool.py --reset-sample
+```
+
+## Marketing Strategies
+
+Apply marketing strategies to automatically generate campaigns for your segments:
+
+```bash
+# Apply Account-Based Marketing (ABM) strategy to New Leads
+python marketing_tool.py --select-strategy ABM --segment "New Leads"
+
+# Apply AIDA (Attention-Interest-Desire-Action) strategy
+python marketing_tool.py --select-strategy AIDA --segment "Active Customers"
+
+# Apply RACE (Reach-Act-Convert-Engage) strategy
+python marketing_tool.py --select-strategy RACE --segment "Dormant Accounts"
+
+# Apply 7Ps Marketing Mix strategy
+python marketing_tool.py --select-strategy 7Ps --segment "Active Customers"
+```
+
+Available strategies:
+- **ABM** (Account-Based Marketing): Target high-value accounts with personalized campaigns
+- **AIDA** (Attention-Interest-Desire-Action): Classic content funnel framework
+- **RACE** (Reach-Act-Convert-Engage): Omnichannel planning framework
+- **7Ps** (7Ps Marketing Mix): Holistic B2B planning framework
+
+## Video Generation
+
+Generate marketing videos from templates:
+
+```bash
+# Generate a video from the "Product Tour Deck" template
+python marketing_tool.py --generate-video \
+  --template "Product Tour Deck" \
+  --output "data/videos/product_tour.mp4"
+```
+
+**Note**: Video generation requires `moviepy`. If not installed, you'll see an error message with installation instructions.

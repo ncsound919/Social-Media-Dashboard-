@@ -1,0 +1,351 @@
+
+## 1. High‑Level Rules For Copilot
+
+- Keep each file focused on **one responsibility** (UI, data, service, adapter, etc.).  
+- Prefer **composition over inheritance** for services.  
+- Never hard‑code **API keys, tokens, or file paths**; use config objects.  
+- All I/O (network, db, disk) must be **wrapped in a service class** with explicit error handling.  
+- No “magic” globals or singletons; everything flows through dependency injection or explicit parameters.
+
+***
+
+## 2. Project Structure Contract
+
+```text
+social_ops_studio/
+  main.py                # App entry, DI wiring only
+  config.py              # Typed settings/config loader
+  app/                   # Application shell (PyQt/Electron)
+    main_window.py
+    navigation.py
+    theme.py
+  ui/                    # Feature screens only, no business logic
+    dashboard_overview.py
+    content_lab_view.py
+    schedule_view.py
+    analytics_view.py
+    community_view.py
+    creator_ops_view.py
+  core/                  # Business logic + orchestration (no UI code)
+    content_pipeline.py
+    scheduling_engine.py
+    analytics_engine.py
+    community_module.py
+    creator_ops_module.py
+    rules_engine.py
+  data/                  # Persistence layer
+    models.py
+    repository.py
+    migrations/
+  integrations/          # External APIs
+    twitter_adapter.py
+    instagram_adapter.py
+    youtube_adapter.py
+    ...
+  utils/
+    logging.py
+    timeutils.py
+    validation.py
+  tests/
+    ...
+```
+
+**Copilot rule:**  
+- UI files import from `core` and `data`, **never the other way around**.  
+- `integrations/*` must not import from `ui/`.
+
+***
+
+## 3. Config & Constants (avoid hard‑coding)
+
+Create a small, strict config layer and tell Copilot to use it:
+
+```python
+# config.py
+from dataclasses import dataclass
+from pathlib import Path
+import os
+
+BASE_DIR = Path(__file__).resolve().parent
+
+@dataclass(frozen=True)
+class AppConfig:
+    db_path: Path
+    log_path: Path
+    environment: str
+
+@dataclass(frozen=True)
+class PlatformConfig:
+    twitter_client_id: str | None
+    twitter_client_secret: str | None
+    # add others as needed
+
+def load_config() -> tuple[AppConfig, PlatformConfig]:
+    app = AppConfig(
+        db_path=BASE_DIR / "data" / "social_ops.db",
+        log_path=BASE_DIR / "logs" / "app.log",
+        environment=os.getenv("APP_ENV", "dev"),
+    )
+    platforms = PlatformConfig(
+        twitter_client_id=os.getenv("TWITTER_CLIENT_ID"),
+        twitter_client_secret=os.getenv("TWITTER_CLIENT_SECRET"),
+    )
+    return app, platforms
+```
+
+Instruction to Copilot in comments:  
+- “When you need a path, API key, or environment flag, **import from `config.py`** and never use absolute paths or literals.”
+
+***
+
+## 4. Data Layer: Repositories, Not Raw Queries Everywhere
+
+Common LLM mistake: sprinkling raw SQL or ORM calls in random files.
+
+Define clean repositories and reuse them:
+
+```python
+# data/models.py
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import String, Integer, DateTime, JSON
+import datetime as dt
+
+class Base(DeclarativeBase):
+    pass
+
+class Account(Base):
+    __tablename__ = "accounts"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    platform: Mapped[str] = mapped_column(String(32), index=True)
+    handle: Mapped[str] = mapped_column(String(64))
+    display_name: Mapped[str] = mapped_column(String(128))
+    avatar_path: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    connected_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
+
+class PostDraft(Base):
+    __tablename__ = "post_drafts"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    title: Mapped[str] = mapped_column(String(140))
+    body_rich: Mapped[str] = mapped_column(String)
+    platform_variants_json: Mapped[dict] = mapped_column(JSON)
+    status: Mapped[str] = mapped_column(String(32), index=True)  # idea/draft/ready/scheduled/published
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
+```
+
+```python
+# data/repository.py
+from sqlalchemy.orm import Session
+from .models import Account, PostDraft
+
+class AccountRepository:
+    def __init__(self, session: Session):
+        self._session = session
+
+    def list_accounts(self) -> list[Account]:
+        return self._session.query(Account).order_by(Account.platform, Account.handle).all()
+
+    def get_by_id(self, account_id: int) -> Account | None:
+        return self._session.get(Account, account_id)
+
+class PostDraftRepository:
+    def __init__(self, session: Session):
+        self._session = session
+
+    def list_by_status(self, status: str) -> list[PostDraft]:
+        return (
+            self._session.query(PostDraft)
+            .filter(PostDraft.status == status)
+            .order_by(PostDraft.created_at.desc())
+            .all()
+        )
+```
+
+Instruction to Copilot:  
+- “Do not write SQL directly in UI or core modules. Always use `repository.py` or new repository classes.”
+
+***
+
+## 5. Core Modules: Pure Logic, No UI, Minimal Side Effects
+
+Define the shape of core services so Copilot plugs into them instead of inventing new patterns.
+
+```python
+# core/content_pipeline.py
+from dataclasses import dataclass
+from typing import Literal
+from data.repository import PostDraftRepository
+
+Stage = Literal["ideas", "drafting", "ready", "scheduled", "published", "evergreen"]
+
+@dataclass
+class PipelineItem:
+    id: int
+    title: str
+    stage: Stage
+    platform_tags: list[str]
+
+class ContentPipelineService:
+    def __init__(self, drafts_repo: PostDraftRepository):
+        self._drafts = drafts_repo
+
+    def get_board(self) -> dict[Stage, list[PipelineItem]]:
+        # pure read logic
+        ...
+    
+    def move_item(self, draft_id: int, new_stage: Stage) -> None:
+        # update status only, no UI or network calls
+        ...
+```
+
+Instruction to Copilot:  
+- “Core services return simple dataclasses or dicts; UI is responsible for rendering. No direct Qt imports in `core`.”
+
+***
+
+## 6. Integrations: One Adapter per Platform, Typed Interface
+
+LLMs often mix concerns; enforce a uniform interface.
+
+```python
+# integrations/base_adapter.py
+from abc import ABC, abstractmethod
+from typing import Iterable
+from dataclasses import dataclass
+
+@dataclass
+class PublishResult:
+    success: bool
+    remote_id: str | None
+    error_message: str | None = None
+
+class SocialPlatformAdapter(ABC):
+    @abstractmethod
+    def publish_post(self, *, text: str, media_paths: list[str]) -> PublishResult:
+        ...
+
+    @abstractmethod
+    def fetch_basic_metrics(self) -> dict:
+        ...
+```
+
+```python
+# integrations/twitter_adapter.py
+from .base_adapter import SocialPlatformAdapter, PublishResult
+
+class TwitterAdapter(SocialPlatformAdapter):
+    def __init__(self, config):
+        self._config = config
+        # set up HTTP client here
+
+    def publish_post(self, *, text: str, media_paths: list[str]) -> PublishResult:
+        # do not log tokens; handle HTTP errors cleanly
+        ...
+```
+
+Instruction:  
+- “Every new platform adapter must subclass `SocialPlatformAdapter` and implement the same methods. No random method names.”
+
+***
+
+## 7. UI Layer: Dumb Views + ViewModels
+
+Whether PyQt or something else, keep logic thin.
+
+```python
+# ui/dashboard_overview.py
+from PyQt6.QtWidgets import QWidget
+from core.analytics_engine import AnalyticsEngine
+
+class DashboardOverviewView(QWidget):
+    def __init__(self, analytics: AnalyticsEngine, parent=None):
+        super().__init__(parent)
+        self._analytics = analytics
+        self._setup_ui()
+        self.refresh()
+
+    def _setup_ui(self):
+        # layout, charts, cards; no DB or HTTP calls
+        ...
+
+    def refresh(self):
+        kpis = self._analytics.get_overview_kpis()
+        # bind KPI values into widgets
+        ...
+```
+
+Instruction:  
+- “Do not open DB sessions or call integrations directly from UI. Always go through a service.”
+
+***
+
+## 8. Error Handling, Logging, and Testing
+
+Common mistakes: silent failures, swallowing exceptions, no tests.
+
+- All public methods in `core/` and `integrations/` must either:
+  - return a `Result`/`PublishResult` object, or  
+  - raise a handled, custom exception (e.g., `PublishError`).  
+
+Example:
+
+```python
+# utils/logging.py
+from loguru import logger
+
+logger.add("logs/app.log", rotation="10 MB", backtrace=True, diagnose=False)
+```
+
+```python
+# core/scheduling_engine.py
+class SchedulingError(Exception):
+    pass
+
+class SchedulingEngine:
+    def schedule_post(...):
+        try:
+            # logic
+            ...
+        except Exception as exc:
+            logger.exception("Failed to schedule post")
+            raise SchedulingError(str(exc)) from exc
+```
+
+Tell Copilot:  
+- “When catching exceptions, log them with `logger.exception` and either re‑raise a domain error or return a failure result.”
+
+For tests, establish a pattern:
+
+```python
+# tests/test_content_pipeline.py
+def test_move_item_changes_stage(session):
+    repo = PostDraftRepository(session)
+    svc = ContentPipelineService(repo)
+    ...
+```
+
+***
+
+## 9. Guardrails Against Typical LLM Sloppiness
+
+Add this at the top of your main dev doc so Copilot reads it:
+
+1. Do **not** invent new global state or singletons; pass dependencies via constructors.  
+2. Every new module must have:
+   - clear imports (no unused imports)  
+   - type hints on public methods  
+   - no commented‑out legacy code blocks.  
+3. Network calls:
+   - use a shared HTTP client per adapter  
+   - set timeouts  
+   - never print responses containing tokens.  
+4. Database:
+   - no `.commit()` sprinkled everywhere; use a session context manager or explicit unit of work.  
+5. File system:
+   - use `pathlib.Path`, not bare strings; no hard‑coded user directories.
+
+***
+
+If you want, the next step can be a **Phase‑1 implementation checklist** (files + functions to create in what order) so you can literally walk Copilot through, file by file, without it drifting.
+
+Citations:
+[1] 1000052067.jpg https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/images/128819417/f841478b-bbd6-4e0b-ad55-57aa3b2d0ded/1000052067.jpg
