@@ -15,8 +15,6 @@ Login detection: presence of the feed nav-bar / identity module.
 from __future__ import annotations
 
 import logging
-import os
-from pathlib import Path
 
 from playwright.async_api import BrowserContext, TimeoutError as PwTimeout
 
@@ -106,12 +104,12 @@ class LinkedInAutomation(PlatformAutomation):
                 file_input = await page.query_selector('input[type="file"]')
                 if file_input:
                     for path in media_paths:
-                        abs_path = str(Path(path).resolve())
-                        if os.path.isfile(abs_path):
-                            await file_input.set_input_files(abs_path)
+                        try:
+                            resolved = self.validate_media_path(path)
+                            await file_input.set_input_files(str(resolved))
                             await page.wait_for_timeout(2000)
-                        else:
-                            logger.warning("Media file not found: %s", abs_path)
+                        except (ValueError, FileNotFoundError) as exc:
+                            logger.warning("Skipping media: %s", exc)
 
             # 4. Click "Post"
             post_btn = await page.wait_for_selector(
@@ -138,6 +136,6 @@ class LinkedInAutomation(PlatformAutomation):
             }
         except Exception as exc:
             logger.exception("LinkedIn post_content error")
-            return {"success": False, "message": f"Error posting to LinkedIn: {exc}"}
+            return {"success": False, "message": "Error posting to LinkedIn — check server logs"}
         finally:
             await page.close()

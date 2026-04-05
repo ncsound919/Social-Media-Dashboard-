@@ -15,8 +15,6 @@ browser redirects to ``https://x.com/home`` — we detect that URL.
 from __future__ import annotations
 
 import logging
-import os
-from pathlib import Path
 from typing import Optional
 
 from playwright.async_api import BrowserContext, TimeoutError as PwTimeout
@@ -90,9 +88,10 @@ class XTwitterAutomation(PlatformAutomation):
             # 3. Attach media
             if media_paths:
                 for path in media_paths:
-                    abs_path = str(Path(path).resolve())
-                    if not os.path.isfile(abs_path):
-                        logger.warning("Media file not found: %s", abs_path)
+                    try:
+                        resolved = self.validate_media_path(path)
+                    except (ValueError, FileNotFoundError) as exc:
+                        logger.warning("Skipping media: %s", exc)
                         continue
                     # X exposes a hidden file input we can set directly
                     file_input = await page.wait_for_selector(
@@ -100,7 +99,7 @@ class XTwitterAutomation(PlatformAutomation):
                         timeout=10_000,
                     )
                     if file_input:
-                        await file_input.set_input_files(abs_path)
+                        await file_input.set_input_files(str(resolved))
                         # Wait a moment for upload to process
                         await page.wait_for_timeout(2000)
 
@@ -131,6 +130,6 @@ class XTwitterAutomation(PlatformAutomation):
             }
         except Exception as exc:
             logger.exception("X post_content error")
-            return {"success": False, "message": f"Error posting to X: {exc}"}
+            return {"success": False, "message": "Error posting to X — check server logs"}
         finally:
             await page.close()

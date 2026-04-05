@@ -164,7 +164,7 @@ function PublishModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={isPublishing ? undefined : onClose} />
       
       {/* Modal */}
       <div className="relative glass-card p-6 w-[400px] max-w-[90vw] border border-white/10 shadow-2xl">

@@ -15,8 +15,6 @@ uploads; the main feed does not expose a compose flow.
 from __future__ import annotations
 
 import logging
-import os
-from pathlib import Path
 
 from playwright.async_api import BrowserContext, TimeoutError as PwTimeout
 
@@ -78,12 +76,12 @@ class TikTokAutomation(PlatformAutomation):
 
             video_path: str | None = None
             for p in media_paths:
-                abs_path = str(Path(p).resolve())
-                if os.path.isfile(abs_path):
-                    video_path = abs_path
+                try:
+                    resolved = self.validate_media_path(p)
+                    video_path = str(resolved)
                     break
-                else:
-                    logger.warning("Media file not found: %s", abs_path)
+                except (ValueError, FileNotFoundError) as exc:
+                    logger.warning("Skipping media: %s", exc)
 
             if video_path is None:
                 return {"success": False, "message": "No valid video file found"}
@@ -141,6 +139,6 @@ class TikTokAutomation(PlatformAutomation):
             }
         except Exception as exc:
             logger.exception("TikTok post_content error")
-            return {"success": False, "message": f"Error posting to TikTok: {exc}"}
+            return {"success": False, "message": "Error posting to TikTok — check server logs"}
         finally:
             await page.close()

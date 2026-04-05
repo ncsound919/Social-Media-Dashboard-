@@ -286,37 +286,38 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   connectPlatform: async (platform) => {
-    try {
-      const res = await fetch(`/api/browser/login/${encodeURIComponent(platform)}`, {
-        method: 'POST',
-      });
-      if (res.ok) {
-        // Reload the sessions list after a successful login
-        await get().loadConnectedPlatforms();
-      }
-    } catch {
-      // Connection attempt failed — no-op, UI already reflects state
+    const res = await fetch(`/api/browser/login/${encodeURIComponent(platform)}`, {
+      method: 'POST',
+    });
+    if (res.ok) {
+      // Reload the sessions list after a successful login
+      await get().loadConnectedPlatforms();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error ?? 'Failed to connect platform');
     }
   },
 
   disconnectPlatform: async (platform) => {
-    try {
-      const res = await fetch('/api/browser/sessions', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ platform }),
-      });
-      if (res.ok) {
-        set((state) => ({
-          connectedPlatforms: state.connectedPlatforms.filter(p => p.platform !== platform),
-        }));
-      }
-    } catch {
-      // Disconnect failed — no-op
+    const res = await fetch('/api/browser/sessions', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ platform }),
+    });
+    if (res.ok) {
+      set((state) => ({
+        connectedPlatforms: state.connectedPlatforms.filter(p => p.platform !== platform),
+      }));
+    } else {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error ?? 'Failed to disconnect platform');
     }
   },
 
   publishToPlatforms: async (content, platforms, mediaPath, preview) => {
+    // Guard against double-publish
+    if (get().publishingStatus.some(s => s.status === 'posting')) return;
+
     // Set all selected platforms to pending
     set({
       publishingStatus: platforms.map(p => ({ platform: p, status: 'pending' as const })),

@@ -11,7 +11,9 @@ from PlatformAutomation and implements the three hooks that differ per site:
 from __future__ import annotations
 
 import logging
+import os
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Optional
 
 from playwright.async_api import BrowserContext
@@ -29,6 +31,21 @@ class PlatformAutomation(ABC):
 
     # Default viewport — overridden by Instagram (mobile emulation)
     VIEWPORT: Optional[dict] = None
+
+    # Allowed directory for media uploads
+    ALLOWED_MEDIA_DIR = Path(os.getenv("MEDIA_DIR", str(Path.home() / "media"))).resolve()
+
+    @staticmethod
+    def validate_media_path(path: str) -> Path:
+        """Validate media path is under the allowed directory."""
+        resolved = Path(path).resolve()
+        try:
+            resolved.relative_to(PlatformAutomation.ALLOWED_MEDIA_DIR)
+        except ValueError:
+            raise ValueError(f"Media path '{path}' is outside allowed directory '{PlatformAutomation.ALLOWED_MEDIA_DIR}'")
+        if not resolved.is_file():
+            raise FileNotFoundError(f"Media file not found: {path}")
+        return resolved
 
     @abstractmethod
     async def post_content(

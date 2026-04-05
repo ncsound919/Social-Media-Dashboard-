@@ -17,8 +17,6 @@ web experience.
 from __future__ import annotations
 
 import logging
-import os
-from pathlib import Path
 
 from playwright.async_api import BrowserContext, TimeoutError as PwTimeout
 
@@ -113,11 +111,11 @@ class InstagramAutomation(PlatformAutomation):
 
             valid_paths: list[str] = []
             for p in media_paths:
-                abs_path = str(Path(p).resolve())
-                if os.path.isfile(abs_path):
-                    valid_paths.append(abs_path)
-                else:
-                    logger.warning("Media file not found: %s", abs_path)
+                try:
+                    resolved = self.validate_media_path(p)
+                    valid_paths.append(str(resolved))
+                except (ValueError, FileNotFoundError) as exc:
+                    logger.warning("Skipping media: %s", exc)
 
             if not valid_paths:
                 return {"success": False, "message": "No valid media files found"}
@@ -178,6 +176,6 @@ class InstagramAutomation(PlatformAutomation):
             }
         except Exception as exc:
             logger.exception("Instagram post_content error")
-            return {"success": False, "message": f"Error posting to Instagram: {exc}"}
+            return {"success": False, "message": "Error posting to Instagram — check server logs"}
         finally:
             await page.close()

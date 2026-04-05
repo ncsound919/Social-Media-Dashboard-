@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -40,6 +40,21 @@ logging.basicConfig(
 logger = logging.getLogger("browser_service")
 
 # ---------------------------------------------------------------------------
+# API key authentication
+# ---------------------------------------------------------------------------
+API_KEY = os.getenv("BROWSER_SERVICE_API_KEY", "")
+
+
+async def verify_api_key(request: Request):
+    """Verify API key if one is configured."""
+    if not API_KEY:
+        return  # No key configured = skip auth (dev mode)
+    auth = request.headers.get("Authorization", "")
+    if auth != f"Bearer {API_KEY}":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+
+# ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
 SESSION_DIR = Path.home() / ".social-dashboard" / "sessions"
@@ -53,22 +68,22 @@ SCHEDULE_FILE.parent.mkdir(parents=True, exist_ok=True)
 # ---------------------------------------------------------------------------
 
 class PostRequest(BaseModel):
-    content: str
-    media_paths: list[str] = Field(default_factory=list)
+    content: str = Field(..., min_length=1, max_length=10000)
+    media_paths: list[str] = Field(default_factory=list, max_length=10)
     preview: bool = True
 
 
 class MultiPostRequest(BaseModel):
-    content: str
-    media_paths: list[str] = Field(default_factory=list)
-    platforms: list[str]
+    content: str = Field(..., min_length=1, max_length=10000)
+    media_paths: list[str] = Field(default_factory=list, max_length=10)
+    platforms: list[str] = Field(..., min_length=1, max_length=5)
     preview: bool = True
 
 
 class ScheduleRequest(BaseModel):
-    content: str
-    media_paths: list[str] = Field(default_factory=list)
-    platforms: list[str]
+    content: str = Field(..., min_length=1, max_length=10000)
+    media_paths: list[str] = Field(default_factory=list, max_length=10)
+    platforms: list[str] = Field(..., min_length=1, max_length=5)
     scheduled_at: str  # ISO-8601 datetime
     preview: bool = False
 
@@ -122,6 +137,8 @@ async def _get_playwright():
 
 
 def _session_path(platform: str) -> Path:
+    if platform not in VALID_PLATFORMS:
+        raise ValueError(f"Invalid platform: {platform}")
     return SESSION_DIR / f"{platform}.json"
 
 
@@ -187,7 +204,8 @@ async def _check_scheduled_posts() -> None:
                     )
                     results.append(result)
                 except Exception as exc:
-                    results.append({"success": False, "message": str(exc)})
+                    logger.exception("Scheduled post %s failed for %s", post["id"], plat)
+                    results.append({"success": False, "message": "Post failed due to an internal error"})
 
             all_ok = all(r.get("success") for r in results)
             post["status"] = "completed" if all_ok else "partial_failure"
@@ -238,15 +256,8 @@ async def _do_post(
             if not logged_in:
                 return {"success": False, "message": f"Session expired for {platform} — please re-login"}
 
-            if preview:
-                # Headful — fill content, then wait for user to manually post or close
-                result = await platform_obj.post_content(context, content, media_paths or [])
-                # In preview mode the post_content already ran headfully; the user
-                # saw the browser and either confirmed or closed it.
-                return result
-            else:
-                result = await platform_obj.post_content(context, content, media_paths or [])
-                return result
+            result = await platform_obj.post_content(context, content, media_paths or [])
+            return result
         finally:
             await context.close()
             await browser.close()
@@ -280,11 +291,12 @@ app = FastAPI(
     title="Social Media Dashboard — Browser Automation Service",
     version="1.0.0",
     lifespan=lifespan,
+    dependencies=[Depends(verify_api_key)],
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000", "http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -316,13 +328,12 @@ async def list_sessions():
         sp = _session_path(plat)
         if sp.exists():
             stat = sp.stat()
-            age_seconds = (datetime.now().timestamp() - stat.st_mtime)
+            age_seconds = (datetime.now(timezone.utc).timestamp() - stat.st_mtime)
             sessions.append({
                 "platform": plat,
                 "exists": True,
                 "age_seconds": round(age_seconds),
                 "age_human": _human_age(age_seconds),
-                "path": str(sp),
             })
         else:
             sessions.append({"platform": plat, "exists": False})
@@ -544,7 +555,7 @@ async def scrape_analytics(platform: str):
             await browser.close()
     except Exception as exc:
         logger.exception("Analytics scrape error for %s", platform)
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise HTTPException(status_code=500, detail="Internal error during analytics scrape")
     finally:
         await pw.stop()
 
@@ -558,7 +569,7 @@ if __name__ == "__main__":
 
     uvicorn.run(
         "main:app",
-        host="0.0.0.0",
+        host="127.0.0.1",
         port=8040,
         reload=True,
         log_level="info",
