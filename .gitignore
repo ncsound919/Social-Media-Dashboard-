@@ -36,6 +36,18 @@ ENV/
 *.swo
 *~
 
+# Environment
+.env
+.env.local
+.env.production
+!.env.example
+
+# Browser service sessions (contain auth cookies)
+browser_service/sessions/
+
+# Node
+node_modules/
+
 # OS
 .DS_Store
 Thumbs.db
