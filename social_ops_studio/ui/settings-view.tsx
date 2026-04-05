@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { 
   User, 
   Link, 
@@ -16,11 +16,15 @@ import {
   Download,
   Upload,
   HardDrive,
-  Keyboard
+  Keyboard,
+  Wifi,
+  WifiOff,
+  Loader2
 } from 'lucide-react';
 import clsx from 'clsx';
 import { Platform } from '@/data/models';
 import { useToast } from '@/ui/toast';
+import { useAppStore } from '@/app/store';
 
 type SettingsTab = 'profile' | 'accounts' | 'notifications' | 'appearance' | 'security' | 'data' | 'shortcuts';
 
@@ -51,6 +55,17 @@ const mockAccounts: ConnectedAccount[] = [
   { platform: 'youtube', handle: 'Your Channel', connected: true, lastSync: new Date(Date.now() - 2 * 60 * 60 * 1000) },
 ];
 
+// Browser service platform IDs mapped to display config
+const browserPlatformConfig: Record<string, { label: string; color: string }> = {
+  x_twitter: { label: 'X / Twitter', color: '#1DA1F2' },
+  linkedin: { label: 'LinkedIn', color: '#0A66C2' },
+  instagram: { label: 'Instagram', color: '#E1306C' },
+  tiktok: { label: 'TikTok', color: '#FF0050' },
+  youtube: { label: 'YouTube', color: '#FF0000' },
+};
+
+const ALL_BROWSER_PLATFORMS = ['x_twitter', 'linkedin', 'instagram', 'tiktok', 'youtube'] as const;
+
 // Keyboard shortcuts list for display
 const keyboardShortcuts = [
   { keys: ['Ctrl', '1'], description: 'Go to Overview' },
@@ -64,9 +79,51 @@ const keyboardShortcuts = [
 
 export function SettingsView() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
-  const [accounts] = useState(mockAccounts);
   const { addToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Browser service store state
+  const browserConnected = useAppStore((s) => s.browserConnected);
+  const connectedPlatforms = useAppStore((s) => s.connectedPlatforms);
+  const checkBrowserHealth = useAppStore((s) => s.checkBrowserHealth);
+  const loadConnectedPlatforms = useAppStore((s) => s.loadConnectedPlatforms);
+  const connectPlatform = useAppStore((s) => s.connectPlatform);
+  const disconnectPlatform = useAppStore((s) => s.disconnectPlatform);
+  
+  const [connectingPlatform, setConnectingPlatform] = useState<string | null>(null);
+  const [disconnectingPlatform, setDisconnectingPlatform] = useState<string | null>(null);
+
+  // Load browser platform sessions when accounts tab is active
+  useEffect(() => {
+    if (activeTab === 'accounts') {
+      checkBrowserHealth();
+      loadConnectedPlatforms();
+    }
+  }, [activeTab, checkBrowserHealth, loadConnectedPlatforms]);
+
+  const handleConnect = async (platform: string) => {
+    setConnectingPlatform(platform);
+    try {
+      await connectPlatform(platform);
+      addToast({ type: 'success', title: 'Login Started', message: `Browser login opened for ${browserPlatformConfig[platform]?.label ?? platform}. Complete the login in the browser window.` });
+    } catch {
+      addToast({ type: 'error', title: 'Connection Failed', message: `Failed to connect ${browserPlatformConfig[platform]?.label ?? platform}.` });
+    } finally {
+      setConnectingPlatform(null);
+    }
+  };
+
+  const handleDisconnect = async (platform: string) => {
+    setDisconnectingPlatform(platform);
+    try {
+      await disconnectPlatform(platform);
+      addToast({ type: 'success', title: 'Disconnected', message: `${browserPlatformConfig[platform]?.label ?? platform} has been disconnected.` });
+    } catch {
+      addToast({ type: 'error', title: 'Disconnect Failed', message: `Failed to disconnect ${browserPlatformConfig[platform]?.label ?? platform}.` });
+    } finally {
+      setDisconnectingPlatform(null);
+    }
+  };
   
   // Settings state
   const [notifications, setNotifications] = useState({
@@ -304,15 +361,38 @@ export function SettingsView() {
         {/* Connected Accounts Tab */}
         {activeTab === 'accounts' && (
           <div className="glass-card p-6">
-            <h3 className="text-lg font-semibold mb-6">Connected Accounts</h3>
+            {/* Browser Service Status Indicator */}
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold">Connected Accounts</h3>
+              <div className={clsx(
+                'flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium',
+                browserConnected
+                  ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                  : 'bg-red-500/10 text-red-400 border border-red-500/20'
+              )}>
+                {browserConnected ? <Wifi size={14} /> : <WifiOff size={14} />}
+                {browserConnected ? 'Browser Service Online' : 'Browser Service Offline'}
+              </div>
+            </div>
+
+            {!browserConnected && (
+              <div className="mb-6 p-4 rounded-lg bg-red-500/5 border border-red-500/20 text-sm text-red-300">
+                The browser automation service at port 8040 is not reachable. 
+                Start the service to connect and manage platform sessions.
+              </div>
+            )}
             
             <div className="space-y-4">
-              {accounts.map((account) => {
-                const config = platformConfig[account.platform];
+              {ALL_BROWSER_PLATFORMS.map((platformId) => {
+                const config = browserPlatformConfig[platformId];
+                const session = connectedPlatforms.find(p => p.platform === platformId);
+                const isConnected = session !== undefined && session.status === 'active';
+                const isConnecting = connectingPlatform === platformId;
+                const isDisconnecting = disconnectingPlatform === platformId;
                 
                 return (
                   <div
-                    key={account.platform}
+                    key={platformId}
                     className="flex items-center justify-between p-4 rounded-lg bg-surface"
                   >
                     <div className="flex items-center gap-4">
@@ -325,32 +405,45 @@ export function SettingsView() {
                       <div>
                         <p className="font-medium">{config.label}</p>
                         <p className="text-sm text-text-secondary">
-                          {account.connected ? account.handle : 'Not connected'}
+                          {isConnected && session
+                            ? `Session age: ${session.session_age_hours.toFixed(1)}h`
+                            : 'Not connected'}
                         </p>
                       </div>
                     </div>
                     
                     <div className="flex items-center gap-3">
-                      {account.connected ? (
+                      {isConnected ? (
                         <>
                           <span className="flex items-center gap-1 text-sm text-green-400">
                             <Check size={14} />
                             Connected
                           </span>
-                          <button className="p-2 rounded-lg hover:bg-background transition-colors text-text-tertiary">
+                          <button 
+                            onClick={() => loadConnectedPlatforms()}
+                            className="p-2 rounded-lg hover:bg-background transition-colors text-text-tertiary"
+                          >
                             <RefreshCw size={16} />
                           </button>
-                          <button className="btn-secondary text-sm py-1.5">
+                          <button 
+                            onClick={() => handleDisconnect(platformId)}
+                            disabled={isDisconnecting}
+                            className="btn-secondary text-sm py-1.5 flex items-center gap-1.5 disabled:opacity-50"
+                          >
+                            {isDisconnecting && <Loader2 size={14} className="animate-spin" />}
                             Disconnect
                           </button>
                         </>
                       ) : (
                         <button 
-                          className="btn-primary text-sm py-1.5"
+                          onClick={() => handleConnect(platformId)}
+                          disabled={isConnecting || !browserConnected}
+                          className="btn-primary text-sm py-1.5 flex items-center gap-1.5 disabled:opacity-50"
                           style={{ 
-                            background: config.color,
+                            background: browserConnected ? config.color : undefined,
                           }}
                         >
+                          {isConnecting && <Loader2 size={14} className="animate-spin" />}
                           Connect
                         </button>
                       )}

@@ -25,6 +25,19 @@ import {
 } from '@/data/repository';
 import { v4 as uuidv4 } from 'uuid';
 
+// Browser service types
+interface ConnectedPlatform {
+  platform: string;
+  session_age_hours: number;
+  status: string;
+}
+
+interface PublishingPlatformStatus {
+  platform: string;
+  status: 'pending' | 'posting' | 'success' | 'error';
+  message?: string;
+}
+
 interface AppState {
   // UI State
   currentPage: string;
@@ -39,6 +52,11 @@ interface AppState {
   rules: Rule[];
   inboxItems: InboxItem[];
   campaigns: Campaign[];
+  
+  // Browser service state
+  browserConnected: boolean;
+  connectedPlatforms: ConnectedPlatform[];
+  publishingStatus: PublishingPlatformStatus[];
   
   // Actions
   setCurrentPage: (page: string) => void;
@@ -61,6 +79,13 @@ interface AppState {
   deleteRule: (id: string) => void;
   markInboxItemRead: (id: string) => void;
   markInboxItemHandled: (id: string) => void;
+  
+  // Browser service actions
+  checkBrowserHealth: () => Promise<void>;
+  loadConnectedPlatforms: () => Promise<void>;
+  connectPlatform: (platform: string) => Promise<void>;
+  disconnectPlatform: (platform: string) => Promise<void>;
+  publishToPlatforms: (content: string, platforms: string[], mediaPath?: string, preview?: boolean) => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -77,6 +102,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   rules: [],
   inboxItems: [],
   campaigns: [],
+  
+  // Browser service initial state
+  browserConnected: false,
+  connectedPlatforms: [],
+  publishingStatus: [],
   
   // UI Actions
   setCurrentPage: (page) => set({ currentPage: page }),
@@ -218,6 +248,128 @@ export const useAppStore = create<AppState>((set, get) => ({
       set((state) => ({
         inboxItems: state.inboxItems.map(i => i.id === id ? updatedItem : i)
       }));
+    }
+  },
+
+  // Browser service actions
+  checkBrowserHealth: async () => {
+    try {
+      const res = await fetch('/api/browser/health');
+      if (res.ok) {
+        const data = await res.json();
+        set({ browserConnected: true, connectedPlatforms: data.platforms ?? [] });
+      } else {
+        set({ browserConnected: false });
+      }
+    } catch {
+      set({ browserConnected: false });
+    }
+  },
+
+  loadConnectedPlatforms: async () => {
+    try {
+      const res = await fetch('/api/browser/sessions');
+      if (res.ok) {
+        const data = await res.json();
+        const platforms: ConnectedPlatform[] = Array.isArray(data)
+          ? data
+          : Array.isArray(data.sessions)
+            ? data.sessions
+            : [];
+        set({ browserConnected: true, connectedPlatforms: platforms });
+      } else {
+        set({ browserConnected: false, connectedPlatforms: [] });
+      }
+    } catch {
+      set({ browserConnected: false, connectedPlatforms: [] });
+    }
+  },
+
+  connectPlatform: async (platform) => {
+    try {
+      const res = await fetch(`/api/browser/login/${encodeURIComponent(platform)}`, {
+        method: 'POST',
+      });
+      if (res.ok) {
+        // Reload the sessions list after a successful login
+        await get().loadConnectedPlatforms();
+      }
+    } catch {
+      // Connection attempt failed — no-op, UI already reflects state
+    }
+  },
+
+  disconnectPlatform: async (platform) => {
+    try {
+      const res = await fetch('/api/browser/sessions', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platform }),
+      });
+      if (res.ok) {
+        set((state) => ({
+          connectedPlatforms: state.connectedPlatforms.filter(p => p.platform !== platform),
+        }));
+      }
+    } catch {
+      // Disconnect failed — no-op
+    }
+  },
+
+  publishToPlatforms: async (content, platforms, mediaPath, preview) => {
+    // Set all selected platforms to pending
+    set({
+      publishingStatus: platforms.map(p => ({ platform: p, status: 'pending' as const })),
+    });
+
+    // Mark all as posting
+    set({
+      publishingStatus: platforms.map(p => ({ platform: p, status: 'posting' as const })),
+    });
+
+    try {
+      const body: Record<string, unknown> = { content, platforms };
+      if (mediaPath) body.media_path = mediaPath;
+      if (preview !== undefined) body.preview = preview;
+
+      const res = await fetch('/api/browser/post', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        // Parse per-platform results if available, otherwise mark all success
+        const results: Record<string, { status: string; message?: string }> = data.results ?? {};
+        set({
+          publishingStatus: platforms.map(p => {
+            const r = results[p];
+            if (r && r.status === 'error') {
+              return { platform: p, status: 'error' as const, message: r.message };
+            }
+            return { platform: p, status: 'success' as const };
+          }),
+        });
+      } else {
+        set({
+          publishingStatus: platforms.map(p => ({
+            platform: p,
+            status: 'error' as const,
+            message: data.error ?? 'Publishing failed',
+          })),
+        });
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Network error';
+      set({
+        publishingStatus: platforms.map(p => ({
+          platform: p,
+          status: 'error' as const,
+          message,
+        })),
+      });
     }
   },
 }));

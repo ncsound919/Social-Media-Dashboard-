@@ -7,10 +7,17 @@ import {
   GripVertical,
   MoreHorizontal,
   Image,
-  Video
+  Video,
+  Send,
+  Eye,
+  X,
+  Loader2,
+  Check,
+  AlertCircle
 } from 'lucide-react';
 import clsx from 'clsx';
 import { ContentStatus, Platform } from '@/data/models';
+import { useAppStore } from '@/app/store';
 
 interface KanbanItem {
   id: string;
@@ -81,55 +88,280 @@ const platformLabels: Record<Platform, string> = {
   bluesky: 'BS',
 };
 
-function KanbanCard({ item }: { item: KanbanItem }) {
+// Browser service platform display names
+const browserPlatformLabels: Record<string, string> = {
+  x_twitter: 'X / Twitter',
+  linkedin: 'LinkedIn',
+  instagram: 'Instagram',
+  tiktok: 'TikTok',
+  youtube: 'YouTube',
+};
+
+const browserPlatformColors: Record<string, string> = {
+  x_twitter: '#1DA1F2',
+  linkedin: '#0A66C2',
+  instagram: '#E1306C',
+  tiktok: '#FF0050',
+  youtube: '#FF0000',
+};
+
+function PublishModal({ 
+  itemTitle, 
+  onClose 
+}: { 
+  itemTitle: string; 
+  onClose: () => void; 
+}) {
+  const connectedPlatforms = useAppStore((s) => s.connectedPlatforms);
+  const publishingStatus = useAppStore((s) => s.publishingStatus);
+  const publishToPlatforms = useAppStore((s) => s.publishToPlatforms);
+
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
+  const [previewFirst, setPreviewFirst] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+
+  const activePlatforms = connectedPlatforms.filter(p => p.status === 'active');
+
+  const togglePlatform = (platform: string) => {
+    setSelectedPlatforms(prev =>
+      prev.includes(platform)
+        ? prev.filter(p => p !== platform)
+        : [...prev, platform]
+    );
+  };
+
+  const handlePublish = async () => {
+    if (selectedPlatforms.length === 0) return;
+    setIsPublishing(true);
+    await publishToPlatforms(itemTitle, selectedPlatforms, undefined, previewFirst);
+    setIsPublishing(false);
+  };
+
+  const getStatusIcon = (platform: string) => {
+    const ps = publishingStatus.find(s => s.platform === platform);
+    if (!ps) return null;
+    switch (ps.status) {
+      case 'pending':
+      case 'posting':
+        return <Loader2 size={14} className="animate-spin text-cyan-400" />;
+      case 'success':
+        return <Check size={14} className="text-green-400" />;
+      case 'error':
+        return <AlertCircle size={14} className="text-red-400" />;
+    }
+  };
+
+  const getStatusMessage = (platform: string) => {
+    const ps = publishingStatus.find(s => s.platform === platform);
+    if (!ps) return null;
+    if (ps.status === 'error' && ps.message) return ps.message;
+    if (ps.status === 'success') return 'Published';
+    if (ps.status === 'posting') return 'Publishing...';
+    if (ps.status === 'pending') return 'Waiting...';
+    return null;
+  };
+
   return (
-    <div className="glass-card p-3 mb-3 group cursor-grab active:cursor-grabbing hover:border-accent-cyan/30 transition-all">
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <GripVertical size={14} className="text-text-tertiary" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      
+      {/* Modal */}
+      <div className="relative glass-card p-6 w-[400px] max-w-[90vw] border border-white/10 shadow-2xl">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-semibold">Publish Content</h3>
+          <button 
+            onClick={onClose} 
+            className="p-1 rounded hover:bg-surface transition-colors text-text-tertiary"
+          >
+            <X size={16} />
+          </button>
         </div>
-        <button className="p-1 rounded hover:bg-surface transition-colors opacity-0 group-hover:opacity-100">
-          <MoreHorizontal size={14} className="text-text-tertiary" />
-        </button>
-      </div>
-      
-      <h4 className="text-sm font-medium mb-3 line-clamp-2">{item.title}</h4>
-      
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1">
-          {item.platforms.slice(0, 3).map((platform) => (
-            <span
-              key={platform}
-              className="w-5 h-5 rounded text-[10px] font-bold flex items-center justify-center"
-              style={{ 
-                backgroundColor: `${platformColors[platform]}20`,
-                color: platformColors[platform]
-              }}
+
+        <p className="text-sm text-text-secondary mb-4 line-clamp-2">{itemTitle}</p>
+
+        {activePlatforms.length === 0 ? (
+          <div className="text-sm text-text-tertiary p-4 rounded-lg bg-surface text-center">
+            No connected platforms. Go to Settings to connect accounts.
+          </div>
+        ) : (
+          <>
+            <div className="space-y-2 mb-4">
+              {activePlatforms.map((p) => {
+                const label = browserPlatformLabels[p.platform] ?? p.platform;
+                const color = browserPlatformColors[p.platform] ?? '#888';
+                const isSelected = selectedPlatforms.includes(p.platform);
+                const statusMsg = getStatusMessage(p.platform);
+
+                return (
+                  <label
+                    key={p.platform}
+                    className={clsx(
+                      'flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all',
+                      isSelected
+                        ? 'bg-surface border border-cyan-500/30'
+                        : 'bg-surface/50 border border-white/5 hover:border-white/10'
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => togglePlatform(p.platform)}
+                        className="sr-only"
+                      />
+                      <div 
+                        className={clsx(
+                          'w-4 h-4 rounded border-2 flex items-center justify-center transition-colors',
+                          isSelected ? 'border-cyan-400 bg-cyan-400' : 'border-gray-500'
+                        )}
+                      >
+                        {isSelected && <Check size={10} className="text-gray-900" />}
+                      </div>
+                      <span
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: color }}
+                      />
+                      <span className="text-sm font-medium">{label}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {statusMsg && (
+                        <span className="text-xs text-text-tertiary">{statusMsg}</span>
+                      )}
+                      {getStatusIcon(p.platform)}
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+
+            {/* Preview toggle */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-surface/50 border border-white/5 mb-4">
+              <div className="flex items-center gap-2">
+                <Eye size={14} className="text-text-tertiary" />
+                <span className="text-sm">Preview First</span>
+              </div>
+              <button
+                onClick={() => setPreviewFirst(!previewFirst)}
+                className={clsx(
+                  'w-10 h-5 rounded-full transition-colors relative',
+                  previewFirst ? 'bg-cyan-500' : 'bg-gray-600'
+                )}
+              >
+                <span 
+                  className={clsx(
+                    'absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform',
+                    previewFirst ? 'translate-x-5' : 'translate-x-0.5'
+                  )}
+                />
+              </button>
+            </div>
+
+            {/* Publish button */}
+            <button
+              onClick={handlePublish}
+              disabled={selectedPlatforms.length === 0 || isPublishing}
+              className={clsx(
+                'w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all',
+                selectedPlatforms.length > 0 && !isPublishing
+                  ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white hover:from-cyan-400 hover:to-purple-400'
+                  : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+              )}
             >
-              {platformLabels[platform]}
-            </span>
-          ))}
-          {item.platforms.length > 3 && (
-            <span className="text-xs text-text-tertiary">
-              +{item.platforms.length - 3}
-            </span>
-          )}
-        </div>
-        
-        <div className="flex items-center gap-2">
-          {item.hasMedia && (
-            <span className="text-text-tertiary">
-              {item.mediaType === 'video' ? <Video size={14} /> : <Image size={14} />}
-            </span>
-          )}
-        </div>
+              {isPublishing ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Send size={16} />
+              )}
+              {isPublishing ? 'Publishing...' : `Publish to ${selectedPlatforms.length} platform${selectedPlatforms.length !== 1 ? 's' : ''}`}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
 }
 
+function KanbanCard({ item, isReady }: { item: KanbanItem; isReady?: boolean }) {
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  
+  return (
+    <>
+      <div className="glass-card p-3 mb-3 group cursor-grab active:cursor-grabbing hover:border-accent-cyan/30 transition-all">
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <GripVertical size={14} className="text-text-tertiary" />
+          </div>
+          <div className="flex items-center gap-1">
+            {isReady && (
+              <button 
+                onClick={() => setShowPublishModal(true)}
+                className="p-1 rounded hover:bg-cyan-500/20 transition-colors text-cyan-400 opacity-0 group-hover:opacity-100"
+                title="Publish"
+              >
+                <Send size={14} />
+              </button>
+            )}
+            <button className="p-1 rounded hover:bg-surface transition-colors opacity-0 group-hover:opacity-100">
+              <MoreHorizontal size={14} className="text-text-tertiary" />
+            </button>
+          </div>
+        </div>
+        
+        <h4 className="text-sm font-medium mb-3 line-clamp-2">{item.title}</h4>
+        
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            {item.platforms.slice(0, 3).map((platform) => (
+              <span
+                key={platform}
+                className="w-5 h-5 rounded text-[10px] font-bold flex items-center justify-center"
+                style={{ 
+                  backgroundColor: `${platformColors[platform]}20`,
+                  color: platformColors[platform]
+                }}
+              >
+                {platformLabels[platform]}
+              </span>
+            ))}
+            {item.platforms.length > 3 && (
+              <span className="text-xs text-text-tertiary">
+                +{item.platforms.length - 3}
+              </span>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {isReady && (
+              <button
+                onClick={() => setShowPublishModal(true)}
+                className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20 transition-colors"
+              >
+                Publish
+              </button>
+            )}
+            {item.hasMedia && (
+              <span className="text-text-tertiary">
+                {item.mediaType === 'video' ? <Video size={14} /> : <Image size={14} />}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {showPublishModal && (
+        <PublishModal
+          itemTitle={item.title}
+          onClose={() => setShowPublishModal(false)}
+        />
+      )}
+    </>
+  );
+}
+
 function KanbanColumn({ stage, items }: { stage: ContentStatus; items: KanbanItem[] }) {
   const config = stageConfig[stage];
+  const isReadyStage = stage === 'ready';
   
   return (
     <div className="flex-shrink-0 w-[280px]">
@@ -147,7 +379,7 @@ function KanbanColumn({ stage, items }: { stage: ContentStatus; items: KanbanIte
       
       <div className="space-y-0 min-h-[400px] pb-4">
         {items.map((item) => (
-          <KanbanCard key={item.id} item={item} />
+          <KanbanCard key={item.id} item={item} isReady={isReadyStage} />
         ))}
         
         <button className="w-full p-3 border border-dashed border-card-border rounded-card text-text-tertiary hover:text-text-secondary hover:border-text-tertiary transition-colors flex items-center justify-center gap-2 text-sm">
